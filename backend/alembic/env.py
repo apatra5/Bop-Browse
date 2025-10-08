@@ -6,6 +6,7 @@ from sqlalchemy import pool
 from alembic import context
 
 from db.base import Base 
+from models import user  # Import all models here to ensure they are registered with Base
 from core.config import settings 
 
 
