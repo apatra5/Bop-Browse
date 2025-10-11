@@ -55,6 +55,22 @@ def authenticate_user(db: Session, username: str, password: str) -> Optional[Use
   return user
 
 
+def update_user(db: Session, user: User, username: Optional[str] = None, password: Optional[str] = None) -> User:
+  """Update user's username and/or password. Password will be stored as md5 hash."""
+  changed = False
+  if username is not None and username != user.username:
+    user.username = username
+    changed = True
+  if password is not None:
+    user.hashed_password = _get_password_hash(password)
+    changed = True
+  if changed:
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+  return user
+
+
 if __name__ == "__main__":
   # test code
   from db.session import SessionLocal
