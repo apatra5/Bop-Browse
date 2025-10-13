@@ -143,7 +143,7 @@ export default function SignUpScreen() {
           <ThemedText style={styles.createText}>Create Account</ThemedText>
         </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => router.replace('/(tabs)')} style={styles.signinRow}>
+            <TouchableOpacity onPress={() => router.push('./signin')} style={styles.signinRow}>
               <ThemedText style={styles.small}>Already Have an Account?</ThemedText>
               <ThemedText style={styles.signin}> Sign In.</ThemedText>
             </TouchableOpacity>

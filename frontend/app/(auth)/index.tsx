@@ -13,6 +13,11 @@ export default function AuthLanding() {
     router.push('./signup');
   };
 
+  const goToSignin = () => {
+    // Navigate to sign in screen within the auth group
+    router.push('./signin');
+  };
+
   const goToApp = () => router.replace('/(tabs)');
 
   return (
@@ -33,7 +38,7 @@ export default function AuthLanding() {
         <ThemedText style={styles.amazonText}>Login With Amazon</ThemedText>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={goToApp} style={styles.signinRow}>
+      <TouchableOpacity onPress={goToSignin} style={styles.signinRow}>
         <ThemedText style={styles.small}>Already Have an Account?</ThemedText>
         <ThemedText style={styles.signin}> Sign In.</ThemedText>
       </TouchableOpacity>
