@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from db.session import SessionLocal
 from crud import user as crud_user
-from schemas.user import UserCreate, UserOut, UserUpdate
+from schemas.user import UserCreate, UserOut, UserUpdate, UserBase
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -17,7 +17,7 @@ def get_db():
 
 
 @router.post("/", response_model=UserOut, status_code=status.HTTP_201_CREATED)
-def create_user(user_in: UserCreate, db: Session = Depends(get_db)):
+def create_user(user_in: UserBase, db: Session = Depends(get_db)):
     existing = crud_user.get_user_by_username(db, user_in.username)
     if existing:
         raise HTTPException(status_code=400, detail="Username already registered")
