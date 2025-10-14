@@ -1,7 +1,7 @@
 from sqlalchemy import Column, String
 from sqlalchemy.orm import relationship
 from db.base import Base
-from .associations import item_category
+from .associations import item_category, item_outfit
 
 class Item(Base):
     __tablename__ = "items"
@@ -9,3 +9,4 @@ class Item(Base):
     name = Column(String)
 
     categories = relationship("Category", secondary=item_category, back_populates="items")
+    outfits = relationship("Outfit", secondary=item_outfit, back_populates="items")
