@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
 from db.base import Base
-from associations import item_category
+from .associations import item_category
 
 class Item(Base):
     __tablename__ = "items"
