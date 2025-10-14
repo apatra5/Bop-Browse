@@ -15,7 +15,7 @@ class Category(Base):
         items (List[Item]): List of items associated with this category.
     """
     __tablename__ = "categories"
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(String, primary_key=True, index=True)
     name = Column(String)
     itemCount = Column(Integer)
 

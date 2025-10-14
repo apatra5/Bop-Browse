@@ -1,9 +1,9 @@
-from sqlalchemy import Column, Integer, ForeignKey, Table
+from sqlalchemy import Column, String, ForeignKey, Table
 from db.base import Base
 
 item_category = Table(
     'item_category',
     Base.metadata,
-    Column('item_id', Integer, ForeignKey('items.id'), primary_key=True),
-    Column('category_id', Integer, ForeignKey('categories.id'), primary_key=True)
+    Column('item_id', String, ForeignKey('items.id'), primary_key=True),
+    Column('category_id', String, ForeignKey('categories.id'), primary_key=True)
 )
