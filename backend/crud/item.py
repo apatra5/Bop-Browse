@@ -24,36 +24,7 @@ def get_items_by_categories_filter(db, category_ids: List[int], offset: int = 0,
     
     query = db.query(item_category.c.item_id).filter(item_category.c.category_id.in_(category_ids)).group_by(item_category.c.item_id).having(db.func.count(item_category.c.category_id) == len(category_ids)).offset(offset).limit(limit)
     item_ids = [row.item_id for row in query.all()]
-    return db.query(Item).filter(Item.id.in_(item_ids)).all()
-
-
-"""
-Operations for database population/synchronization script.
-"""
-def add_item_with_categories(db, id: int, name: str, category_ids: List[int]) -> Item:
-    """
-    Create a new item and associate it with given categories.
-    """
-    # Check if the item is already in the database. If so, check if we need to associate this item with more categories.
-    db_item = db.query(Item).filter(Item.id == id).first()
-    if db_item:
-        existing_item_categories = db.query(item_category.c.category_id).filter(item_category.c.item_id == id).all()
-        existing_item_category_ids = {row.category_id for row in existing_item_categories}
-        new_category_ids = set(category_ids) - existing_item_category_ids
-        for category_id in new_category_ids:
-            db.execute(item_category.insert().values(item_id=id, category_id=category_id))
-        db.commit()
-        return db_item
-    
-    # If the item is not in the database, create it and associate with categories.
-    db_item = Item(id=id, name=name)
-    db.add(db_item)
-    db.commit()
-    db.refresh(db_item)
-    for category_id in category_ids:
-        db.execute(item_category.insert().values(item_id=id, category_id=category_id))
-    db.commit()
-    return db_item        
+    return db.query(Item).filter(Item.id.in_(item_ids)).all()  
         
 
 """
