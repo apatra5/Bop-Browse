@@ -5,7 +5,7 @@ from models.associations import item_category
 """
 Basic CRUD operations for Category model. 
 """
-def get_category(db, category_id: int) -> Category:
+def get_category(db, category_id: str) -> Category:
     """Retrieve a category by its ID."""
     return db.query(Category).filter(Category.id == category_id).first()
 
@@ -13,7 +13,7 @@ def get_all_categories(db) -> list[Category]:
     """Retrieve all categories."""
     return db.query(Category).all()
 
-def create_category(db, id: int, name: str, itemCount: int) -> Category:
+def create_category(db, id: str, name: str, itemCount: int) -> Category:
     """Create a new category."""
     db_category = Category(id=id, name=name, itemCount=itemCount)
     db.add(db_category)
@@ -21,7 +21,7 @@ def create_category(db, id: int, name: str, itemCount: int) -> Category:
     db.refresh(db_category)
     return db_category
 
-def update_category(db, id: int, name: str = None, itemCount: int = None) -> Category:
+def update_category(db, id: str, name: str = None, itemCount: int = None) -> Category:
     """Update an existing category."""
     db_category = db.query(Category).filter(Category.id == id).first()
     if db_category:
@@ -34,7 +34,7 @@ def update_category(db, id: int, name: str = None, itemCount: int = None) -> Cat
         db.refresh(db_category)
     return db_category
 
-def delete_category(db, id: int) -> bool:
+def delete_category(db, id: str) -> bool:
     """Delete a category by its ID."""
     db_category = db.query(Category).filter(Category.id == id).first()
     if db_category:

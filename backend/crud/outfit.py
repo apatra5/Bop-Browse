@@ -3,7 +3,7 @@ from models.outfit import Outfit
 from models.associations import item_outfit
 
 
-def get_outfit_by_id(db, outfit_id: int):
+def get_outfit_by_id(db, outfit_id: str):
     """
     Retrieve an outfit by its ID.
     Args:
@@ -14,7 +14,7 @@ def get_outfit_by_id(db, outfit_id: int):
     """
     return db.query(Outfit).filter(Outfit.id == outfit_id).first()
 
-def create_outfit(db, id: int) -> Outfit:
+def create_outfit(db, id: str) -> Outfit:
     """Create a new outfit."""
     db_outfit = Outfit(id=id)
     db.add(db_outfit)
