@@ -26,3 +26,8 @@ python-dotenv==1.1.1
 SQLAlchemy==2.0.43
 typing-inspection==0.4.2
 typing_extensions==4.15.0
+
+# Fetching 3rd party APIs
+certifi==2025.10.5 
+httpcore==1.0.9 
+httpx==0.28.1
