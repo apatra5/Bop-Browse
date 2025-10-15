@@ -3,7 +3,7 @@ from typing import List
 
 from sqlalchemy import desc
 from models.item import Item
-from models.associations import item_category
+from models.associations import item_category, item_outfit
 
 
 """
@@ -92,6 +92,11 @@ def delete_item(db, id: str) -> bool:
 
 def delete_all_items(db) -> int:
     """Delete all items. Returns the number of deleted items."""
+    # first delete all items in all associations
+    db.execute(item_category.delete())
+    db.execute(item_outfit.delete())
+    db.commit()
+
     deleted = db.query(Item).delete()
     db.commit()
     return deleted

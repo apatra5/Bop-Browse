@@ -34,9 +34,10 @@ class LeafCategoryInfo(CategoryInfo):
     
 class ProductInfo:
     # Info: ProductSin (str), ShortDescription (str)
-    def __init__(self, product_sin: str, short_description: str):
+    def __init__(self, product_sin: str, short_description: str, image_url_suffix: str = None):
         self.product_sin = product_sin
         self.short_description = short_description
+        self.image_url_suffix = image_url_suffix
 
     def __str__(self):
         return f"ProductInfo(product_sin={self.product_sin}, short_description={self.short_description})"
@@ -93,7 +94,7 @@ class SyncItems:
             products = response.get("products", [])
 
             for product in products:
-                item = ProductInfo(product_sin=product["product"].get("productSin"), short_description=product["product"].get("shortDescription"))
+                item = ProductInfo(product_sin=product["product"].get("productSin"), short_description=product["product"].get("shortDescription"), image_url_suffix=product["product"]["colors"][0]["images"][0]["src"])
                 self._add_or_update_item(item, category_path=category.path)
 
 
@@ -104,7 +105,7 @@ class SyncItems:
         if not style_color_outfits or len(style_color_outfits) == 0:
             self.skipped_items += 1
             return
-        
+
         # Add all categories in the path to the database if they don't exist
         for category in category_path:
             db_category = crud_category.get_category(self.db, category.id)
@@ -116,7 +117,12 @@ class SyncItems:
         db_item = crud_item.get_item_by_id(self.db, id=item.product_sin)
         if not db_item:
             self.added_items += 1
-            db_item = crud_item.create_item(self.db, id=item.product_sin, name=item.short_description)
+            db_item = crud_item.create_item(self.db, id=item.product_sin, name=item.short_description, image_url_suffix=item.image_url_suffix)
+        
+        else: 
+            # update existing item
+            self.updated_existing_items += 1
+            db_item = crud_item.update_item(self.db, id=item.product_sin, name=item.short_description, image_url_suffix=item.image_url_suffix)
 
         # Update category associations
         for category in category_path:
@@ -133,15 +139,17 @@ class SyncItems:
             outfits = sc_outfit.get("outfits", [])
             for outfit in outfits:
                 outfit_id = outfit.get("id")
+                outfit_image_url_suffix = outfit.get("primaryImage", {}).get("src")
                 if crud_outfit.get_outfit_by_id(self.db, outfit_id) is None:
                     # Create the outfit if it doesn't exist
-                    crud_outfit.create_outfit(self.db, id=outfit_id)
+                    crud_outfit.create_outfit(self.db, id=outfit_id, image_url_suffix=outfit_image_url_suffix)
 
                 if outfit_id and outfit_id not in [o.id for o in db_item.outfits]:
                     # Associate this outfit with the item
                     db_item.outfits.append(crud_outfit.get_outfit_by_id(self.db, outfit_id))
                     self.db.add(db_item)
                     self.db.commit()
+        
 
 
 
@@ -171,8 +179,16 @@ class SyncItems:
         
         logging.info(f"Sync complete. Total items added: {self.added_items}, updated: {self.updated_existing_items}, skipped: {self.skipped_items}")
 
+    def cleanTables(self):
+        # Clean all tables
+        deleted_items = crud_item.delete_all_items(self.db)
+        deleted_categories = crud_category.delete_all_categories(self.db)
+        deleted_outfits = crud_outfit.delete_all_outfits(self.db)
+        logging.info(f"Deleted {deleted_items} items, {deleted_categories} categories, {deleted_outfits} outfits from the database.")
+
 
 
 if __name__ == "__main__":
     syncer = SyncItems()
+    syncer.cleanTables()
     syncer.sync()
