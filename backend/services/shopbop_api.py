@@ -22,7 +22,6 @@ class ShopbopAPIClient:
     
     def browse_by_category(self, categoryId: str, allowOutOfStockItems: bool = None, colors: str = None, lang: str = "en-US", sort: str = None, minPrice: str = None, maxPrice: str = None, limit: int = None, dept: str = "WOMENS", q: str = None, offset: int = None):
         params = {
-            "categoryId": categoryId,
             "allowOutOfStockItems": allowOutOfStockItems,
             "colors": colors,
             "lang": lang,
@@ -36,13 +35,12 @@ class ShopbopAPIClient:
         }
         # Remove None values from params
         params = {k: v for k, v in params.items() if v is not None}
-        
-        response = self._client.get("/public/categories/{categoryId}/products", params=params)
+        response = self._client.get(f"/public/categories/{categoryId}/products", params=params)
         response.raise_for_status()
         return response.json()
     
     def get_outfit(self, productSin, lang: str = "en-US"):
-        response = self._client.get(f"/public/outfits?productSin={productSin}&lang={lang}")
+        response = self._client.get(f"/public/products/{productSin}/outfits")
         response.raise_for_status()
         return response.json()
     
