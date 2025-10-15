@@ -86,13 +86,15 @@ class SyncItems:
 
 
     def _scan_category_items(self, category: LeafCategoryInfo):
-        response = self.api_client.browse_by_category(categoryId=category.id)
-        products = response.get("products", [])
-        print(len(products))
+        total_item_scanned = 0
+        while (total_item_scanned < category.item_count):
+            response = self.api_client.browse_by_category(categoryId=category.id, offset=total_item_scanned)
+            total_item_scanned += len(response.get("products", []))
+            products = response.get("products", [])
 
-        for product in products:
-            item = ProductInfo(product_sin=product["product"].get("productSin"), short_description=product["product"].get("shortDescription"))
-            self._add_or_update_item(item, category_path=category.path)
+            for product in products:
+                item = ProductInfo(product_sin=product["product"].get("productSin"), short_description=product["product"].get("shortDescription"))
+                self._add_or_update_item(item, category_path=category.path)
 
 
     def _add_or_update_item(self, item: ProductInfo, category_path: List[CategoryInfo]):
