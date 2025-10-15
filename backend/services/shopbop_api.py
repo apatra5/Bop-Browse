@@ -3,9 +3,9 @@ import httpx
 class ShopbopAPIClient:
     BASE_URL = "https://api.shopbop.com/"
     headers = {
-        'accept: application/json',
-        'Client-Id: Shopbop-UW-Team1-2025',
-        'Client-Version: 1.0.0'
+        'accept':'application/json',
+        'Client-Id':'Shopbop-UW-Team1-2025',
+        'Client-Version':'1.0.0'
     }
 
     def __init__(self):
@@ -37,7 +37,7 @@ class ShopbopAPIClient:
         # Remove None values from params
         params = {k: v for k, v in params.items() if v is not None}
         
-        response = self._client.get("/public/items", params=params)
+        response = self._client.get("/public/categories/{categoryId}/products", params=params)
         response.raise_for_status()
         return response.json()
     
