@@ -1,5 +1,5 @@
-from ..models.category import Category
-from ..models.associations import item_category
+from models.category import Category
+from models.associations import item_category
 
 
 """

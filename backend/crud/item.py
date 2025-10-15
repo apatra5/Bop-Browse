@@ -1,7 +1,7 @@
 
 from typing import List
-from ..models.item import Item
-from ..models.associations import item_category
+from models.item import Item
+from models.associations import item_category
 
 
 """
