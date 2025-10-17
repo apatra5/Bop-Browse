@@ -1,10 +1,12 @@
 from sqlalchemy.orm import Session
 import logging
 from typing import List, Dict
+from datetime import datetime
 
 from services.shopbop_api import ShopbopAPIClient
 from db.session import SessionLocal
 from crud import item as crud_item, category as crud_category, outfit as crud_outfit
+
 
 logging.basicConfig(level=logging.INFO)
 
@@ -93,6 +95,9 @@ class SyncItems:
             total_item_scanned += len(response.get("products", []))
             products = response.get("products", [])
 
+            if products is None or len(products) == 0:
+                break
+
             for product in products:
                 item = ProductInfo(product_sin=product["product"].get("productSin"), short_description=product["product"].get("shortDescription"), image_url_suffix=product["product"]["colors"][0]["images"][0]["src"])
                 self._add_or_update_item(item, category_path=category.path)
@@ -100,6 +105,7 @@ class SyncItems:
 
     def _add_or_update_item(self, item: ProductInfo, category_path: List[CategoryInfo]):
         # Check if the item has any outfit associated with it
+        logging.info(f"time passed: {datetime.now() - self.start_sync_time}, Checking item {item.product_sin} - {item.short_description} | added: {self.added_items}, updated: {self.updated_existing_items}, skipped: {self.skipped_items}")
         outfit_response = self.api_client.get_outfit(productSin=item.product_sin)
         style_color_outfits = outfit_response.get("styleColorOutfits", [])
         if not style_color_outfits or len(style_color_outfits) == 0:
@@ -154,6 +160,9 @@ class SyncItems:
 
 
     def sync(self):
+        self.start_sync_time = datetime.now()
+        logging.info(f"Starting sync at {self.start_sync_time}")
+
         # Get a list of leaf categories
         root = self._get_dfs_root(category_root_id = "13266", dept = "WOMENS", lang = "en-US")
         if not root:
@@ -190,5 +199,5 @@ class SyncItems:
 
 if __name__ == "__main__":
     syncer = SyncItems()
-    syncer.cleanTables()
+    # syncer.cleanTables()
     syncer.sync()
