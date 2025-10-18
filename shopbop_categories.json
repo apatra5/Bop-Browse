@@ -1,0 +1,1066 @@
+[
+  {
+    "id": "19189",
+    "name": "Edits",
+    "full_path": "Edits",
+    "level": 0,
+    "count": 1390,
+    "suppressed": false
+  },
+  {
+    "id": "74303",
+    "name": "Asian & Pacific Islander-Led Brands",
+    "full_path": "Edits > Asian & Pacific Islander-Led Brands",
+    "level": 1,
+    "count": 107,
+    "suppressed": false
+  },
+  {
+    "id": "73736",
+    "name": "Black-Led Brands",
+    "full_path": "Edits > Black-Led Brands",
+    "level": 1,
+    "count": 62,
+    "suppressed": false
+  },
+  {
+    "id": "21587",
+    "name": "Editors' Picks",
+    "full_path": "Edits > Editors' Picks",
+    "level": 1,
+    "count": 520,
+    "suppressed": false
+  },
+  {
+    "id": "21588",
+    "name": "Everyday Basics",
+    "full_path": "Edits > Everyday Basics",
+    "level": 1,
+    "count": 181,
+    "suppressed": false
+  },
+  {
+    "id": "73925",
+    "name": "The Golf Shop",
+    "full_path": "Edits > The Golf Shop",
+    "level": 1,
+    "count": 286,
+    "suppressed": false
+  },
+  {
+    "id": "76299",
+    "name": "The Tennis Shop",
+    "full_path": "Edits > The Tennis Shop",
+    "level": 1,
+    "count": 102,
+    "suppressed": false
+  },
+  {
+    "id": "22686",
+    "name": "Top Sellers",
+    "full_path": "Edits > Top Sellers",
+    "level": 1,
+    "count": 341,
+    "suppressed": false
+  },
+  {
+    "id": "27246",
+    "name": "Wear to Work",
+    "full_path": "Edits > Wear to Work",
+    "level": 1,
+    "count": 221,
+    "suppressed": false
+  },
+  {
+    "id": "19185",
+    "name": "Clothing",
+    "full_path": "Clothing",
+    "level": 0,
+    "count": 3998,
+    "suppressed": false
+  },
+  {
+    "id": "67156",
+    "name": "Activewear",
+    "full_path": "Clothing > Activewear",
+    "level": 1,
+    "count": 301,
+    "suppressed": false
+  },
+  {
+    "id": "19208",
+    "name": "Jeans",
+    "full_path": "Clothing > Jeans",
+    "level": 1,
+    "count": 356,
+    "suppressed": false
+  },
+  {
+    "id": "19209",
+    "name": "Outerwear",
+    "full_path": "Clothing > Outerwear",
+    "level": 1,
+    "count": 432,
+    "suppressed": false
+  },
+  {
+    "id": "19210",
+    "name": "Pants",
+    "full_path": "Clothing > Pants",
+    "level": 1,
+    "count": 442,
+    "suppressed": false
+  },
+  {
+    "id": "67149",
+    "name": "Dress",
+    "full_path": "Clothing > Pants > Dress",
+    "level": 2,
+    "count": 48,
+    "suppressed": true
+  },
+  {
+    "id": "67148",
+    "name": "Casual",
+    "full_path": "Clothing > Pants > Casual",
+    "level": 2,
+    "count": 269,
+    "suppressed": true
+  },
+  {
+    "id": "67147",
+    "name": "Athletic",
+    "full_path": "Clothing > Pants > Athletic",
+    "level": 2,
+    "count": 39,
+    "suppressed": true
+  },
+  {
+    "id": "19207",
+    "name": "Shirts",
+    "full_path": "Clothing > Shirts",
+    "level": 1,
+    "count": 860,
+    "suppressed": false
+  },
+  {
+    "id": "19212",
+    "name": "Shorts",
+    "full_path": "Clothing > Shorts",
+    "level": 1,
+    "count": 303,
+    "suppressed": false
+  },
+  {
+    "id": "19213",
+    "name": "Suits & Blazers",
+    "full_path": "Clothing > Suits & Blazers",
+    "level": 1,
+    "count": 53,
+    "suppressed": false
+  },
+  {
+    "id": "19214",
+    "name": "Sweaters",
+    "full_path": "Clothing > Sweaters",
+    "level": 1,
+    "count": 328,
+    "suppressed": false
+  },
+  {
+    "id": "19215",
+    "name": "Sweatshirts",
+    "full_path": "Clothing > Sweatshirts",
+    "level": 1,
+    "count": 202,
+    "suppressed": false
+  },
+  {
+    "id": "67131",
+    "name": "Crew Necks",
+    "full_path": "Clothing > Sweatshirts > Crew Necks",
+    "level": 2,
+    "count": 38,
+    "suppressed": false
+  },
+  {
+    "id": "67132",
+    "name": "Pullover Hoodies",
+    "full_path": "Clothing > Sweatshirts > Pullover Hoodies",
+    "level": 2,
+    "count": 81,
+    "suppressed": false
+  },
+  {
+    "id": "67133",
+    "name": "Zip-Up Hoodies",
+    "full_path": "Clothing > Sweatshirts > Zip-Up Hoodies",
+    "level": 2,
+    "count": 12,
+    "suppressed": false
+  },
+  {
+    "id": "67134",
+    "name": "Quarter-Zips",
+    "full_path": "Clothing > Sweatshirts > Quarter-Zips",
+    "level": 2,
+    "count": 29,
+    "suppressed": false
+  },
+  {
+    "id": "51561",
+    "name": "Swimsuits",
+    "full_path": "Clothing > Swimsuits",
+    "level": 1,
+    "count": 219,
+    "suppressed": false
+  },
+  {
+    "id": "19211",
+    "name": "T-Shirts & Polos",
+    "full_path": "Clothing > T-Shirts & Polos",
+    "level": 1,
+    "count": 768,
+    "suppressed": false
+  },
+  {
+    "id": "19216",
+    "name": "Underwear & Sleepwear",
+    "full_path": "Clothing > Underwear & Sleepwear",
+    "level": 1,
+    "count": 118,
+    "suppressed": false
+  },
+  {
+    "id": "67170",
+    "name": "Boxers",
+    "full_path": "Clothing > Underwear & Sleepwear > Boxers",
+    "level": 2,
+    "count": 3,
+    "suppressed": false
+  },
+  {
+    "id": "67169",
+    "name": "Boxer Briefs",
+    "full_path": "Clothing > Underwear & Sleepwear > Boxer Briefs",
+    "level": 2,
+    "count": 27,
+    "suppressed": false
+  },
+  {
+    "id": "67168",
+    "name": "Briefs",
+    "full_path": "Clothing > Underwear & Sleepwear > Briefs",
+    "level": 2,
+    "count": 7,
+    "suppressed": false
+  },
+  {
+    "id": "69161",
+    "name": "Pajamas",
+    "full_path": "Clothing > Underwear & Sleepwear > Pajamas",
+    "level": 2,
+    "count": 44,
+    "suppressed": false
+  },
+  {
+    "id": "72266",
+    "name": "Robes",
+    "full_path": "Clothing > Underwear & Sleepwear > Robes",
+    "level": 2,
+    "count": 4,
+    "suppressed": false
+  },
+  {
+    "id": "67167",
+    "name": "Trunks",
+    "full_path": "Clothing > Underwear & Sleepwear > Trunks",
+    "level": 2,
+    "count": 29,
+    "suppressed": false
+  },
+  {
+    "id": "67166",
+    "name": "Undershirts",
+    "full_path": "Clothing > Underwear & Sleepwear > Undershirts",
+    "level": 2,
+    "count": 4,
+    "suppressed": false
+  },
+  {
+    "id": "19186",
+    "name": "Shoes",
+    "full_path": "Shoes",
+    "level": 0,
+    "count": 945,
+    "suppressed": false
+  },
+  {
+    "id": "19217",
+    "name": "Boots",
+    "full_path": "Shoes > Boots",
+    "level": 1,
+    "count": 98,
+    "suppressed": false
+  },
+  {
+    "id": "19218",
+    "name": "Lace-Ups",
+    "full_path": "Shoes > Lace-Ups",
+    "level": 1,
+    "count": 44,
+    "suppressed": false
+  },
+  {
+    "id": "19219",
+    "name": "Loafers & Slip-Ons",
+    "full_path": "Shoes > Loafers & Slip-Ons",
+    "level": 1,
+    "count": 186,
+    "suppressed": false
+  },
+  {
+    "id": "19220",
+    "name": "Sandals",
+    "full_path": "Shoes > Sandals",
+    "level": 1,
+    "count": 77,
+    "suppressed": false
+  },
+  {
+    "id": "71609",
+    "name": "Slippers",
+    "full_path": "Shoes > Slippers",
+    "level": 1,
+    "count": 32,
+    "suppressed": false
+  },
+  {
+    "id": "19221",
+    "name": "Sneakers",
+    "full_path": "Shoes > Sneakers",
+    "level": 1,
+    "count": 512,
+    "suppressed": false
+  },
+  {
+    "id": "57278",
+    "name": "Shoe Care & Accessories",
+    "full_path": "Shoes > Shoe Care & Accessories",
+    "level": 1,
+    "count": 2,
+    "suppressed": false
+  },
+  {
+    "id": "76183",
+    "name": "Designer",
+    "full_path": "Shoes > Designer",
+    "level": 1,
+    "count": 3,
+    "suppressed": false
+  },
+  {
+    "id": "67212",
+    "name": "Bags",
+    "full_path": "Bags",
+    "level": 0,
+    "count": 99,
+    "suppressed": false
+  },
+  {
+    "id": "67218",
+    "name": "Backpacks",
+    "full_path": "Bags > Backpacks",
+    "level": 1,
+    "count": 29,
+    "suppressed": false
+  },
+  {
+    "id": "67224",
+    "name": "Belt Bags",
+    "full_path": "Bags > Belt Bags",
+    "level": 1,
+    "count": 1,
+    "suppressed": false
+  },
+  {
+    "id": "67220",
+    "name": "Briefcases",
+    "full_path": "Bags > Briefcases",
+    "level": 1,
+    "count": 11,
+    "suppressed": false
+  },
+  {
+    "id": "67217",
+    "name": "Duffels",
+    "full_path": "Bags > Duffels",
+    "level": 1,
+    "count": 13,
+    "suppressed": false
+  },
+  {
+    "id": "67222",
+    "name": "Luggage",
+    "full_path": "Bags > Luggage",
+    "level": 1,
+    "count": 8,
+    "suppressed": false
+  },
+  {
+    "id": "67219",
+    "name": "Messengers",
+    "full_path": "Bags > Messengers",
+    "level": 1,
+    "count": 11,
+    "suppressed": false
+  },
+  {
+    "id": "67221",
+    "name": "Pouches",
+    "full_path": "Bags > Pouches",
+    "level": 1,
+    "count": 2,
+    "suppressed": false
+  },
+  {
+    "id": "67223",
+    "name": "Totes",
+    "full_path": "Bags > Totes",
+    "level": 1,
+    "count": 9,
+    "suppressed": false
+  },
+  {
+    "id": "19187",
+    "name": "Accessories",
+    "full_path": "Accessories",
+    "level": 0,
+    "count": 760,
+    "suppressed": false
+  },
+  {
+    "id": "19222",
+    "name": "Bags",
+    "full_path": "Accessories > Bags",
+    "level": 1,
+    "count": 97,
+    "suppressed": false
+  },
+  {
+    "id": "19223",
+    "name": "Belts",
+    "full_path": "Accessories > Belts",
+    "level": 1,
+    "count": 68,
+    "suppressed": false
+  },
+  {
+    "id": "19224",
+    "name": "Hats, Scarves & Gloves",
+    "full_path": "Accessories > Hats, Scarves & Gloves",
+    "level": 1,
+    "count": 150,
+    "suppressed": false
+  },
+  {
+    "id": "67189",
+    "name": "Hats",
+    "full_path": "Accessories > Hats, Scarves & Gloves > Hats",
+    "level": 2,
+    "count": 118,
+    "suppressed": false
+  },
+  {
+    "id": "67188",
+    "name": "Scarves",
+    "full_path": "Accessories > Hats, Scarves & Gloves > Scarves",
+    "level": 2,
+    "count": 16,
+    "suppressed": false
+  },
+  {
+    "id": "67187",
+    "name": "Gloves",
+    "full_path": "Accessories > Hats, Scarves & Gloves > Gloves",
+    "level": 2,
+    "count": 14,
+    "suppressed": false
+  },
+  {
+    "id": "19226",
+    "name": "Home",
+    "full_path": "Accessories > Home",
+    "level": 1,
+    "count": 17,
+    "suppressed": false
+  },
+  {
+    "id": "67877",
+    "name": "Candles",
+    "full_path": "Accessories > Home > Candles",
+    "level": 2,
+    "count": 3,
+    "suppressed": false
+  },
+  {
+    "id": "67193",
+    "name": "Drinkware",
+    "full_path": "Accessories > Home > Drinkware",
+    "level": 2,
+    "count": 1,
+    "suppressed": false
+  },
+  {
+    "id": "19225",
+    "name": "Jewelry",
+    "full_path": "Accessories > Jewelry",
+    "level": 1,
+    "count": 29,
+    "suppressed": false
+  },
+  {
+    "id": "67204",
+    "name": "Bracelets",
+    "full_path": "Accessories > Jewelry > Bracelets",
+    "level": 2,
+    "count": 1,
+    "suppressed": false
+  },
+  {
+    "id": "67202",
+    "name": "Necklaces",
+    "full_path": "Accessories > Jewelry > Necklaces",
+    "level": 2,
+    "count": 1,
+    "suppressed": false
+  },
+  {
+    "id": "67200",
+    "name": "Cufflinks",
+    "full_path": "Accessories > Jewelry > Cufflinks",
+    "level": 2,
+    "count": 6,
+    "suppressed": false
+  },
+  {
+    "id": "67199",
+    "name": "Watches",
+    "full_path": "Accessories > Jewelry > Watches",
+    "level": 2,
+    "count": 21,
+    "suppressed": false
+  },
+  {
+    "id": "20262",
+    "name": "Socks",
+    "full_path": "Accessories > Socks",
+    "level": 1,
+    "count": 109,
+    "suppressed": false
+  },
+  {
+    "id": "67196",
+    "name": "Loafer / No Show",
+    "full_path": "Accessories > Socks > Loafer / No Show",
+    "level": 2,
+    "count": 4,
+    "suppressed": false
+  },
+  {
+    "id": "67195",
+    "name": "Ankle",
+    "full_path": "Accessories > Socks > Ankle",
+    "level": 2,
+    "count": 8,
+    "suppressed": false
+  },
+  {
+    "id": "67194",
+    "name": "Crew",
+    "full_path": "Accessories > Socks > Crew",
+    "level": 2,
+    "count": 95,
+    "suppressed": false
+  },
+  {
+    "id": "19227",
+    "name": "Sunglasses",
+    "full_path": "Accessories > Sunglasses",
+    "level": 1,
+    "count": 219,
+    "suppressed": false
+  },
+  {
+    "id": "67216",
+    "name": "Aviator",
+    "full_path": "Accessories > Sunglasses > Aviator",
+    "level": 2,
+    "count": 48,
+    "suppressed": false
+  },
+  {
+    "id": "67215",
+    "name": "Rectangle",
+    "full_path": "Accessories > Sunglasses > Rectangle",
+    "level": 2,
+    "count": 102,
+    "suppressed": false
+  },
+  {
+    "id": "67214",
+    "name": "Round",
+    "full_path": "Accessories > Sunglasses > Round",
+    "level": 2,
+    "count": 57,
+    "suppressed": false
+  },
+  {
+    "id": "19229",
+    "name": "Ties & Pocket Squares",
+    "full_path": "Accessories > Ties & Pocket Squares",
+    "level": 1,
+    "count": 17,
+    "suppressed": false
+  },
+  {
+    "id": "19230",
+    "name": "Travel Accessories",
+    "full_path": "Accessories > Travel Accessories",
+    "level": 1,
+    "count": 16,
+    "suppressed": false
+  },
+  {
+    "id": "19231",
+    "name": "Wallets & Money Clips",
+    "full_path": "Accessories > Wallets & Money Clips",
+    "level": 1,
+    "count": 27,
+    "suppressed": false
+  },
+  {
+    "id": "19188",
+    "name": "Sale",
+    "full_path": "Sale",
+    "level": 0,
+    "count": 1118,
+    "suppressed": false
+  },
+  {
+    "id": "19406",
+    "name": "New to Sale",
+    "full_path": "Sale > New to Sale",
+    "level": 1,
+    "count": 557,
+    "suppressed": false
+  },
+  {
+    "id": "19407",
+    "name": "Clothing",
+    "full_path": "Sale > Clothing",
+    "level": 1,
+    "count": 912,
+    "suppressed": false
+  },
+  {
+    "id": "67495",
+    "name": "Activewear",
+    "full_path": "Sale > Clothing > Activewear",
+    "level": 2,
+    "count": 55,
+    "suppressed": false
+  },
+  {
+    "id": "23712",
+    "name": "Jeans",
+    "full_path": "Sale > Clothing > Jeans",
+    "level": 2,
+    "count": 47,
+    "suppressed": false
+  },
+  {
+    "id": "23713",
+    "name": "Outerwear",
+    "full_path": "Sale > Clothing > Outerwear",
+    "level": 2,
+    "count": 47,
+    "suppressed": false
+  },
+  {
+    "id": "23034",
+    "name": "Pants",
+    "full_path": "Sale > Clothing > Pants",
+    "level": 2,
+    "count": 67,
+    "suppressed": false
+  },
+  {
+    "id": "67271",
+    "name": "Dress",
+    "full_path": "Sale > Clothing > Pants > Dress",
+    "level": 3,
+    "count": 4,
+    "suppressed": true
+  },
+  {
+    "id": "67269",
+    "name": "Casual",
+    "full_path": "Sale > Clothing > Pants > Casual",
+    "level": 3,
+    "count": 53,
+    "suppressed": true
+  },
+  {
+    "id": "67262",
+    "name": "Athletic",
+    "full_path": "Sale > Clothing > Pants > Athletic",
+    "level": 3,
+    "count": 1,
+    "suppressed": true
+  },
+  {
+    "id": "23033",
+    "name": "Shirts",
+    "full_path": "Sale > Clothing > Shirts",
+    "level": 2,
+    "count": 338,
+    "suppressed": false
+  },
+  {
+    "id": "23031",
+    "name": "Shorts",
+    "full_path": "Sale > Clothing > Shorts",
+    "level": 2,
+    "count": 132,
+    "suppressed": false
+  },
+  {
+    "id": "23032",
+    "name": "Suits & Blazers",
+    "full_path": "Sale > Clothing > Suits & Blazers",
+    "level": 2,
+    "count": 13,
+    "suppressed": false
+  },
+  {
+    "id": "23035",
+    "name": "Sweaters",
+    "full_path": "Sale > Clothing > Sweaters",
+    "level": 2,
+    "count": 16,
+    "suppressed": false
+  },
+  {
+    "id": "22985",
+    "name": "Sweatshirts",
+    "full_path": "Sale > Clothing > Sweatshirts",
+    "level": 2,
+    "count": 24,
+    "suppressed": false
+  },
+  {
+    "id": "67266",
+    "name": "Crew Necks",
+    "full_path": "Sale > Clothing > Sweatshirts > Crew Necks",
+    "level": 3,
+    "count": 4,
+    "suppressed": false
+  },
+  {
+    "id": "67258",
+    "name": "Pullover Hoodies",
+    "full_path": "Sale > Clothing > Sweatshirts > Pullover Hoodies",
+    "level": 3,
+    "count": 13,
+    "suppressed": false
+  },
+  {
+    "id": "67281",
+    "name": "Quarter-Zips",
+    "full_path": "Sale > Clothing > Sweatshirts > Quarter-Zips",
+    "level": 3,
+    "count": 7,
+    "suppressed": false
+  },
+  {
+    "id": "51584",
+    "name": "Swim",
+    "full_path": "Sale > Clothing > Swim",
+    "level": 2,
+    "count": 89,
+    "suppressed": false
+  },
+  {
+    "id": "22987",
+    "name": "T-Shirts & Polos",
+    "full_path": "Sale > Clothing > T-Shirts & Polos",
+    "level": 2,
+    "count": 154,
+    "suppressed": false
+  },
+  {
+    "id": "23716",
+    "name": "Underwear",
+    "full_path": "Sale > Clothing > Underwear",
+    "level": 2,
+    "count": 6,
+    "suppressed": false
+  },
+  {
+    "id": "69174",
+    "name": "Pajamas",
+    "full_path": "Sale > Clothing > Underwear > Pajamas",
+    "level": 3,
+    "count": 6,
+    "suppressed": false
+  },
+  {
+    "id": "19329",
+    "name": "Shoes",
+    "full_path": "Sale > Shoes",
+    "level": 1,
+    "count": 136,
+    "suppressed": false
+  },
+  {
+    "id": "23928",
+    "name": "Boots",
+    "full_path": "Sale > Shoes > Boots",
+    "level": 2,
+    "count": 5,
+    "suppressed": false
+  },
+  {
+    "id": "23938",
+    "name": "Lace-Ups",
+    "full_path": "Sale > Shoes > Lace-Ups",
+    "level": 2,
+    "count": 7,
+    "suppressed": false
+  },
+  {
+    "id": "22983",
+    "name": "Loafers & Slip-Ons",
+    "full_path": "Sale > Shoes > Loafers & Slip-Ons",
+    "level": 2,
+    "count": 49,
+    "suppressed": false
+  },
+  {
+    "id": "22989",
+    "name": "Sandals",
+    "full_path": "Sale > Shoes > Sandals",
+    "level": 2,
+    "count": 13,
+    "suppressed": false
+  },
+  {
+    "id": "19330",
+    "name": "Sneakers",
+    "full_path": "Sale > Shoes > Sneakers",
+    "level": 2,
+    "count": 61,
+    "suppressed": false
+  },
+  {
+    "id": "76983",
+    "name": "Designer",
+    "full_path": "Sale > Shoes > Designer",
+    "level": 2,
+    "count": 1,
+    "suppressed": false
+  },
+  {
+    "id": "71724",
+    "name": "Slippers",
+    "full_path": "Sale > Shoes > Slippers",
+    "level": 2,
+    "count": 1,
+    "suppressed": false
+  },
+  {
+    "id": "67250",
+    "name": "Bags",
+    "full_path": "Sale > Bags",
+    "level": 1,
+    "count": 8,
+    "suppressed": false
+  },
+  {
+    "id": "67288",
+    "name": "Totes",
+    "full_path": "Sale > Bags > Totes",
+    "level": 2,
+    "count": 3,
+    "suppressed": false
+  },
+  {
+    "id": "67273",
+    "name": "Backpacks",
+    "full_path": "Sale > Bags > Backpacks",
+    "level": 2,
+    "count": 4,
+    "suppressed": false
+  },
+  {
+    "id": "19408",
+    "name": "Accessories",
+    "full_path": "Sale > Accessories",
+    "level": 1,
+    "count": 52,
+    "suppressed": false
+  },
+  {
+    "id": "23681",
+    "name": "Bags",
+    "full_path": "Sale > Accessories > Bags",
+    "level": 2,
+    "count": 8,
+    "suppressed": false
+  },
+  {
+    "id": "23979",
+    "name": "Belts",
+    "full_path": "Sale > Accessories > Belts",
+    "level": 2,
+    "count": 2,
+    "suppressed": false
+  },
+  {
+    "id": "23956",
+    "name": "Hats, Scarves & Gloves",
+    "full_path": "Sale > Accessories > Hats, Scarves & Gloves",
+    "level": 2,
+    "count": 15,
+    "suppressed": false
+  },
+  {
+    "id": "67260",
+    "name": "Hats",
+    "full_path": "Sale > Accessories > Hats, Scarves & Gloves > Hats",
+    "level": 3,
+    "count": 15,
+    "suppressed": false
+  },
+  {
+    "id": "23953",
+    "name": "Socks",
+    "full_path": "Sale > Accessories > Socks",
+    "level": 2,
+    "count": 3,
+    "suppressed": false
+  },
+  {
+    "id": "67252",
+    "name": "Crew",
+    "full_path": "Sale > Accessories > Socks > Crew",
+    "level": 3,
+    "count": 3,
+    "suppressed": false
+  },
+  {
+    "id": "21862",
+    "name": "Sunglasses",
+    "full_path": "Sale > Accessories > Sunglasses",
+    "level": 2,
+    "count": 21,
+    "suppressed": false
+  },
+  {
+    "id": "67306",
+    "name": "Aviator",
+    "full_path": "Sale > Accessories > Sunglasses > Aviator",
+    "level": 3,
+    "count": 4,
+    "suppressed": false
+  },
+  {
+    "id": "67304",
+    "name": "Rectangle",
+    "full_path": "Sale > Accessories > Sunglasses > Rectangle",
+    "level": 3,
+    "count": 8,
+    "suppressed": false
+  },
+  {
+    "id": "67257",
+    "name": "Round",
+    "full_path": "Sale > Accessories > Sunglasses > Round",
+    "level": 3,
+    "count": 4,
+    "suppressed": false
+  },
+  {
+    "id": "23694",
+    "name": "Ties & Pocket Squares",
+    "full_path": "Sale > Accessories > Ties & Pocket Squares",
+    "level": 2,
+    "count": 2,
+    "suppressed": false
+  },
+  {
+    "id": "24565",
+    "name": "Wallets & Money Clips",
+    "full_path": "Sale > Accessories > Wallets & Money Clips",
+    "level": 2,
+    "count": 1,
+    "suppressed": false
+  },
+  {
+    "id": "19201",
+    "name": "20% Off",
+    "full_path": "Sale > 20% Off",
+    "level": 1,
+    "count": 3,
+    "suppressed": false
+  },
+  {
+    "id": "19202",
+    "name": "30% Off",
+    "full_path": "Sale > 30% Off",
+    "level": 1,
+    "count": 106,
+    "suppressed": false
+  },
+  {
+    "id": "19203",
+    "name": "40% Off",
+    "full_path": "Sale > 40% Off",
+    "level": 1,
+    "count": 343,
+    "suppressed": false
+  },
+  {
+    "id": "19204",
+    "name": "50% Off - Final Sale",
+    "full_path": "Sale > 50% Off - Final Sale",
+    "level": 1,
+    "count": 324,
+    "suppressed": false
+  },
+  {
+    "id": "19205",
+    "name": "60% Off & Over - Final Sale",
+    "full_path": "Sale > 60% Off & Over - Final Sale",
+    "level": 1,
+    "count": 343,
+    "suppressed": false
+  },
+  {
+    "id": "52715",
+    "name": "Sale Picks Under $100",
+    "full_path": "Sale > Sale Picks Under $100",
+    "level": 1,
+    "count": 834,
+    "suppressed": false
+  },
+  {
+    "id": "57596",
+    "name": "Sale Picks Under $250",
+    "full_path": "Sale > Sale Picks Under $250",
+    "level": 1,
+    "count": 947,
+    "suppressed": false
+  }
+]
