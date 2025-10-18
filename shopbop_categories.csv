@@ -1,0 +1,134 @@
+id,name,full_path,level,count,suppressed
+19189,Edits,Edits,0,1390,False
+74303,Asian & Pacific Islander-Led Brands,Edits > Asian & Pacific Islander-Led Brands,1,107,False
+73736,Black-Led Brands,Edits > Black-Led Brands,1,62,False
+21587,Editors' Picks,Edits > Editors' Picks,1,520,False
+21588,Everyday Basics,Edits > Everyday Basics,1,181,False
+73925,The Golf Shop,Edits > The Golf Shop,1,286,False
+76299,The Tennis Shop,Edits > The Tennis Shop,1,102,False
+22686,Top Sellers,Edits > Top Sellers,1,341,False
+27246,Wear to Work,Edits > Wear to Work,1,221,False
+19185,Clothing,Clothing,0,3998,False
+67156,Activewear,Clothing > Activewear,1,301,False
+19208,Jeans,Clothing > Jeans,1,356,False
+19209,Outerwear,Clothing > Outerwear,1,432,False
+19210,Pants,Clothing > Pants,1,442,False
+67149,Dress,Clothing > Pants > Dress,2,48,True
+67148,Casual,Clothing > Pants > Casual,2,269,True
+67147,Athletic,Clothing > Pants > Athletic,2,39,True
+19207,Shirts,Clothing > Shirts,1,860,False
+19212,Shorts,Clothing > Shorts,1,303,False
+19213,Suits & Blazers,Clothing > Suits & Blazers,1,53,False
+19214,Sweaters,Clothing > Sweaters,1,328,False
+19215,Sweatshirts,Clothing > Sweatshirts,1,202,False
+67131,Crew Necks,Clothing > Sweatshirts > Crew Necks,2,38,False
+67132,Pullover Hoodies,Clothing > Sweatshirts > Pullover Hoodies,2,81,False
+67133,Zip-Up Hoodies,Clothing > Sweatshirts > Zip-Up Hoodies,2,12,False
+67134,Quarter-Zips,Clothing > Sweatshirts > Quarter-Zips,2,29,False
+51561,Swimsuits,Clothing > Swimsuits,1,219,False
+19211,T-Shirts & Polos,Clothing > T-Shirts & Polos,1,768,False
+19216,Underwear & Sleepwear,Clothing > Underwear & Sleepwear,1,118,False
+67170,Boxers,Clothing > Underwear & Sleepwear > Boxers,2,3,False
+67169,Boxer Briefs,Clothing > Underwear & Sleepwear > Boxer Briefs,2,27,False
+67168,Briefs,Clothing > Underwear & Sleepwear > Briefs,2,7,False
+69161,Pajamas,Clothing > Underwear & Sleepwear > Pajamas,2,44,False
+72266,Robes,Clothing > Underwear & Sleepwear > Robes,2,4,False
+67167,Trunks,Clothing > Underwear & Sleepwear > Trunks,2,29,False
+67166,Undershirts,Clothing > Underwear & Sleepwear > Undershirts,2,4,False
+19186,Shoes,Shoes,0,945,False
+19217,Boots,Shoes > Boots,1,98,False
+19218,Lace-Ups,Shoes > Lace-Ups,1,44,False
+19219,Loafers & Slip-Ons,Shoes > Loafers & Slip-Ons,1,186,False
+19220,Sandals,Shoes > Sandals,1,77,False
+71609,Slippers,Shoes > Slippers,1,32,False
+19221,Sneakers,Shoes > Sneakers,1,512,False
+57278,Shoe Care & Accessories,Shoes > Shoe Care & Accessories,1,2,False
+76183,Designer,Shoes > Designer,1,3,False
+67212,Bags,Bags,0,99,False
+67218,Backpacks,Bags > Backpacks,1,29,False
+67224,Belt Bags,Bags > Belt Bags,1,1,False
+67220,Briefcases,Bags > Briefcases,1,11,False
+67217,Duffels,Bags > Duffels,1,13,False
+67222,Luggage,Bags > Luggage,1,8,False
+67219,Messengers,Bags > Messengers,1,11,False
+67221,Pouches,Bags > Pouches,1,2,False
+67223,Totes,Bags > Totes,1,9,False
+19187,Accessories,Accessories,0,760,False
+19222,Bags,Accessories > Bags,1,97,False
+19223,Belts,Accessories > Belts,1,68,False
+19224,"Hats, Scarves & Gloves","Accessories > Hats, Scarves & Gloves",1,150,False
+67189,Hats,"Accessories > Hats, Scarves & Gloves > Hats",2,118,False
+67188,Scarves,"Accessories > Hats, Scarves & Gloves > Scarves",2,16,False
+67187,Gloves,"Accessories > Hats, Scarves & Gloves > Gloves",2,14,False
+19226,Home,Accessories > Home,1,17,False
+67877,Candles,Accessories > Home > Candles,2,3,False
+67193,Drinkware,Accessories > Home > Drinkware,2,1,False
+19225,Jewelry,Accessories > Jewelry,1,29,False
+67204,Bracelets,Accessories > Jewelry > Bracelets,2,1,False
+67202,Necklaces,Accessories > Jewelry > Necklaces,2,1,False
+67200,Cufflinks,Accessories > Jewelry > Cufflinks,2,6,False
+67199,Watches,Accessories > Jewelry > Watches,2,21,False
+20262,Socks,Accessories > Socks,1,109,False
+67196,Loafer / No Show,Accessories > Socks > Loafer / No Show,2,4,False
+67195,Ankle,Accessories > Socks > Ankle,2,8,False
+67194,Crew,Accessories > Socks > Crew,2,95,False
+19227,Sunglasses,Accessories > Sunglasses,1,219,False
+67216,Aviator,Accessories > Sunglasses > Aviator,2,48,False
+67215,Rectangle,Accessories > Sunglasses > Rectangle,2,102,False
+67214,Round,Accessories > Sunglasses > Round,2,57,False
+19229,Ties & Pocket Squares,Accessories > Ties & Pocket Squares,1,17,False
+19230,Travel Accessories,Accessories > Travel Accessories,1,16,False
+19231,Wallets & Money Clips,Accessories > Wallets & Money Clips,1,27,False
+19188,Sale,Sale,0,1118,False
+19406,New to Sale,Sale > New to Sale,1,557,False
+19407,Clothing,Sale > Clothing,1,912,False
+67495,Activewear,Sale > Clothing > Activewear,2,55,False
+23712,Jeans,Sale > Clothing > Jeans,2,47,False
+23713,Outerwear,Sale > Clothing > Outerwear,2,47,False
+23034,Pants,Sale > Clothing > Pants,2,67,False
+67271,Dress,Sale > Clothing > Pants > Dress,3,4,True
+67269,Casual,Sale > Clothing > Pants > Casual,3,53,True
+67262,Athletic,Sale > Clothing > Pants > Athletic,3,1,True
+23033,Shirts,Sale > Clothing > Shirts,2,338,False
+23031,Shorts,Sale > Clothing > Shorts,2,132,False
+23032,Suits & Blazers,Sale > Clothing > Suits & Blazers,2,13,False
+23035,Sweaters,Sale > Clothing > Sweaters,2,16,False
+22985,Sweatshirts,Sale > Clothing > Sweatshirts,2,24,False
+67266,Crew Necks,Sale > Clothing > Sweatshirts > Crew Necks,3,4,False
+67258,Pullover Hoodies,Sale > Clothing > Sweatshirts > Pullover Hoodies,3,13,False
+67281,Quarter-Zips,Sale > Clothing > Sweatshirts > Quarter-Zips,3,7,False
+51584,Swim,Sale > Clothing > Swim,2,89,False
+22987,T-Shirts & Polos,Sale > Clothing > T-Shirts & Polos,2,154,False
+23716,Underwear,Sale > Clothing > Underwear,2,6,False
+69174,Pajamas,Sale > Clothing > Underwear > Pajamas,3,6,False
+19329,Shoes,Sale > Shoes,1,136,False
+23928,Boots,Sale > Shoes > Boots,2,5,False
+23938,Lace-Ups,Sale > Shoes > Lace-Ups,2,7,False
+22983,Loafers & Slip-Ons,Sale > Shoes > Loafers & Slip-Ons,2,49,False
+22989,Sandals,Sale > Shoes > Sandals,2,13,False
+19330,Sneakers,Sale > Shoes > Sneakers,2,61,False
+76983,Designer,Sale > Shoes > Designer,2,1,False
+71724,Slippers,Sale > Shoes > Slippers,2,1,False
+67250,Bags,Sale > Bags,1,8,False
+67288,Totes,Sale > Bags > Totes,2,3,False
+67273,Backpacks,Sale > Bags > Backpacks,2,4,False
+19408,Accessories,Sale > Accessories,1,52,False
+23681,Bags,Sale > Accessories > Bags,2,8,False
+23979,Belts,Sale > Accessories > Belts,2,2,False
+23956,"Hats, Scarves & Gloves","Sale > Accessories > Hats, Scarves & Gloves",2,15,False
+67260,Hats,"Sale > Accessories > Hats, Scarves & Gloves > Hats",3,15,False
+23953,Socks,Sale > Accessories > Socks,2,3,False
+67252,Crew,Sale > Accessories > Socks > Crew,3,3,False
+21862,Sunglasses,Sale > Accessories > Sunglasses,2,21,False
+67306,Aviator,Sale > Accessories > Sunglasses > Aviator,3,4,False
+67304,Rectangle,Sale > Accessories > Sunglasses > Rectangle,3,8,False
+67257,Round,Sale > Accessories > Sunglasses > Round,3,4,False
+23694,Ties & Pocket Squares,Sale > Accessories > Ties & Pocket Squares,2,2,False
+24565,Wallets & Money Clips,Sale > Accessories > Wallets & Money Clips,2,1,False
+19201,20% Off,Sale > 20% Off,1,3,False
+19202,30% Off,Sale > 30% Off,1,106,False
+19203,40% Off,Sale > 40% Off,1,343,False
+19204,50% Off - Final Sale,Sale > 50% Off - Final Sale,1,324,False
+19205,60% Off & Over - Final Sale,Sale > 60% Off & Over - Final Sale,1,343,False
+52715,Sale Picks Under $100,Sale > Sale Picks Under $100,1,834,False
+57596,Sale Picks Under $250,Sale > Sale Picks Under $250,1,947,False
