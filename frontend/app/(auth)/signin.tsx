@@ -5,16 +5,35 @@ import { Stack, useRouter } from 'expo-router';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 
+import api from '../../api/axios';
+
 export default function SignInScreen() {
   const router = useRouter();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const onSignIn = async () => {
-    // Mock sign in delay
-    await new Promise((r) => setTimeout(r, 600));
-    // After sign in navigate into the app
-    router.replace('/(tabs)');
+    // Quick login: check user existence by username
+    setError('');
+    setLoading(true);
+    try {
+      // Using GET /users/{username} per API; successful 200 means user exists
+      await api.get(`/users/${encodeURIComponent(username)}`);
+      router.replace('/(tabs)');
+    } catch (err: any) {
+      // Axios-style error handling
+      const status = err?.response?.status;
+      console.log(err);
+      if (status === 404) {
+        setError('Incorrect username');
+      } else {
+        setError('Server error');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const onSignup = () => router.push('./signup');
@@ -50,18 +69,23 @@ export default function SignInScreen() {
             autoComplete="password"
           />
 
+          {error ? <ThemedText style={styles.errorText}>{error}</ThemedText> : null}
+
           <TouchableOpacity
-            style={[styles.signinButton, (!username || !password) && styles.signinButtonDisabled]}
+            style={[
+              styles.signinButton,
+              (loading || !username || !password) && styles.signinButtonDisabled,
+            ]}
             onPress={onSignIn}
             activeOpacity={0.8}
-            disabled={!username || !password}
+            disabled={loading || !username || !password}
           >
-            <ThemedText style={styles.signinText}>SIGN IN</ThemedText>
+            <ThemedText style={styles.signinText}>{loading ? 'Signing in…' : 'SIGN IN'}</ThemedText>
           </TouchableOpacity>
 
           <ThemedText style={styles.or}>Or</ThemedText>
 
-          <TouchableOpacity style={styles.amazonButton} onPress={onSignIn} activeOpacity={0.8}>
+          <TouchableOpacity style={styles.amazonButton} onPress={onSignIn} activeOpacity={0.8} disabled={loading}>
             <ThemedText style={styles.amazonIcon}>a</ThemedText>
             <ThemedText style={styles.amazonText}>Login With Amazon</ThemedText>
           </TouchableOpacity>
@@ -161,5 +185,10 @@ const styles = StyleSheet.create({
   signup: {
     fontSize: 12,
     color: '#111',
+  },
+  errorText: {
+    marginTop: 8,
+    color: '#B00020',
+    fontSize: 13,
   },
 });
