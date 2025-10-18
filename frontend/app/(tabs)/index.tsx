@@ -1,12 +1,11 @@
-import { useState } from 'react';
-import { StyleSheet, View, TouchableOpacity, Alert } from 'react-native';
-import { ThemedView } from '@/components/themed-view';
-import { ThemedText } from '@/components/themed-text';
-import { ItemCard } from '@/components/item-card';
-import { MOCK_ITEMS, Item } from '@/data/mock-items';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { ItemCard } from "@/components/item-card";
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Item, MOCK_ITEMS } from "@/data/mock-items";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useState } from "react";
+import { StyleSheet, TouchableOpacity, View } from "react-native";
 
 export default function SwipeScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -14,21 +13,14 @@ export default function SwipeScreen() {
   const colorScheme = useColorScheme();
 
   const handleSwipeLeft = () => {
-    console.log('Disliked:', MOCK_ITEMS[currentIndex].name);
-    // Use setTimeout to ensure animation completes before state update
-    setTimeout(() => {
-      setCurrentIndex((prev) => prev + 1);
-    }, 50);
+    console.log("Disliked:", MOCK_ITEMS[currentIndex].name);
+    setCurrentIndex((prevIndex) => prevIndex + 1);
   };
 
   const handleSwipeRight = () => {
     const likedItem = MOCK_ITEMS[currentIndex];
-    console.log('Liked:', likedItem.name);
-    setLikedItems((prev) => [...prev, likedItem]);
-    // Use setTimeout to ensure animation completes before state update
-    setTimeout(() => {
-      setCurrentIndex((prev) => prev + 1);
-    }, 50);
+    console.log("Liked:", likedItem.name);
+    setCurrentIndex((prevIndex) => prevIndex + 1);
   };
 
   const handleDislikePress = () => {
@@ -39,77 +31,17 @@ export default function SwipeScreen() {
     handleSwipeRight();
   };
 
-  const handleViewLikes = () => {
-    Alert.alert(
-      'Liked Items',
-      likedItems.length > 0
-        ? likedItems.map((item) => item.name).join('\n')
-        : 'No liked items yet!',
-      [{ text: 'OK' }]
-    );
-  };
-
-  const handleReset = () => {
-    setCurrentIndex(0);
-    setLikedItems([]);
-  };
-
-  // Check if we're at the end
-  if (currentIndex >= MOCK_ITEMS.length) {
-    return (
-      <ThemedView style={styles.container}>
-        <View style={styles.endContainer}>
-          <ThemedText type="title" style={styles.endTitle}>
-            🎉 All Done!
-          </ThemedText>
-          <ThemedText style={styles.endSubtitle}>
-            You've seen all {MOCK_ITEMS.length} items
-          </ThemedText>
-          <ThemedText style={styles.endStats}>
-            You liked {likedItems.length} items
-          </ThemedText>
-          <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
-            <ThemedText type="defaultSemiBold" style={styles.resetButtonText}>
-              Start Over
-            </ThemedText>
-          </TouchableOpacity>
-          {likedItems.length > 0 && (
-            <TouchableOpacity style={styles.viewLikesButton} onPress={handleViewLikes}>
-              <ThemedText type="defaultSemiBold" style={styles.viewLikesButtonText}>
-                View Liked Items
-              </ThemedText>
-            </TouchableOpacity>
-          )}
-        </View>
-      </ThemedView>
-    );
-  }
-
   const currentItem = MOCK_ITEMS[currentIndex];
-  const nextItem = currentIndex + 1 < MOCK_ITEMS.length ? MOCK_ITEMS[currentIndex + 1] : null;
+  const nextItem =
+    currentIndex + 1 < MOCK_ITEMS.length ? MOCK_ITEMS[currentIndex + 1] : null;
 
   return (
     <ThemedView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <ThemedText type="title" style={styles.logo}>
-          Bop-Browse ✨
+          Bop-Browse
         </ThemedText>
-        <View style={styles.progressContainer}>
-          <ThemedText style={styles.progressText}>
-            {currentIndex + 1} / {MOCK_ITEMS.length}
-          </ThemedText>
-          <View style={styles.progressBar}>
-            <View
-              style={[
-                styles.progressFill,
-                {
-                  width: `${((currentIndex + 1) / MOCK_ITEMS.length) * 100}%`,
-                },
-              ]}
-            />
-          </View>
-        </View>
       </View>
 
       {/* Card Stack */}
@@ -136,45 +68,40 @@ export default function SwipeScreen() {
 
       {/* Action Buttons */}
       <View style={styles.buttonsContainer}>
+        {/* Undo Button - Left */}
         <TouchableOpacity
-          style={[styles.actionButton, styles.dislikeButton]}
+          style={[styles.actionButton, styles.smallButton]}
+          activeOpacity={0.7}
+        >
+          <IconSymbol name="arrow.counterclockwise" size={24} color="#d1d1d1" />
+        </TouchableOpacity>
+
+        {/* Dislike Button */}
+        <TouchableOpacity
+          style={[styles.actionButton, styles.mainButton]}
           onPress={handleDislikePress}
-          activeOpacity={0.7}>
-          <IconSymbol name="xmark" size={32} color="#FF5252" />
+          activeOpacity={0.7}
+        >
+          <IconSymbol name="xmark" size={36} color="#5a5a5a" />
         </TouchableOpacity>
 
+        {/* Like Button */}
         <TouchableOpacity
-          style={[styles.actionButton, styles.infoButton]}
-          onPress={handleViewLikes}
-          activeOpacity={0.7}>
-          <IconSymbol
-            name="heart.fill"
-            size={24}
-            color={Colors[colorScheme ?? 'light'].tint}
-          />
-          {likedItems.length > 0 && (
-            <View style={styles.badge}>
-              <ThemedText style={styles.badgeText}>{likedItems.length}</ThemedText>
-            </View>
-          )}
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.actionButton, styles.likeButton]}
+          style={[styles.actionButton, styles.mainButton]}
           onPress={handleLikePress}
-          activeOpacity={0.7}>
-          <IconSymbol name="heart.fill" size={32} color="#00C853" />
+          activeOpacity={0.7}
+        >
+          <IconSymbol name="heart.fill" size={36} color="#c97c7e" />
+        </TouchableOpacity>
+
+        {/* Lock/Save Button - Right */}
+        <TouchableOpacity
+          style={[styles.actionButton, styles.smallButton]}
+          activeOpacity={0.7}
+        >
+          <IconSymbol name="lock.fill" size={24} color="#d1d1d1" />
         </TouchableOpacity>
       </View>
-
-      {/* Swipe Hint */}
-      {currentIndex === 0 && (
-        <View style={styles.hintContainer}>
-          <ThemedText style={styles.hintText}>
-            👆 Swipe or use buttons below
-          </ThemedText>
-        </View>
-      )}
     </ThemedView>
   );
 }
@@ -185,7 +112,7 @@ const styles = StyleSheet.create({
     paddingTop: 60,
   },
   header: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 20,
     paddingHorizontal: 20,
   },
@@ -193,35 +120,14 @@ const styles = StyleSheet.create({
     fontSize: 28,
     marginBottom: 12,
   },
-  progressContainer: {
-    width: '100%',
-    alignItems: 'center',
-  },
-  progressText: {
-    fontSize: 14,
-    marginBottom: 8,
-    opacity: 0.7,
-  },
-  progressBar: {
-    width: '80%',
-    height: 4,
-    backgroundColor: '#e0e0e0',
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#4CAF50',
-    borderRadius: 2,
-  },
   cardContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   buttonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     gap: 20,
     paddingBottom: 40,
     paddingHorizontal: 20,
@@ -230,98 +136,113 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: 'white',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
+    backgroundColor: "white",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
   },
-  dislikeButton: {
-    borderWidth: 3,
-    borderColor: '#FF5252',
-  },
-  likeButton: {
-    borderWidth: 3,
-    borderColor: '#00C853',
-  },
   infoButton: {
     borderWidth: 2,
-    borderColor: '#ddd',
-    position: 'relative',
+    borderColor: "#ddd",
+    position: "relative",
   },
   badge: {
-    position: 'absolute',
+    position: "absolute",
     top: -4,
     right: -4,
-    backgroundColor: '#FF5252',
+    backgroundColor: "#FF5252",
     borderRadius: 10,
     width: 20,
     height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   badgeText: {
-    color: 'white',
+    color: "white",
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   hintContainer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 120,
-    alignSelf: 'center',
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    alignSelf: "center",
+    backgroundColor: "rgba(0,0,0,0.7)",
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 20,
   },
   hintText: {
-    color: 'white',
+    color: "white",
     fontSize: 14,
   },
   endContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
     gap: 16,
   },
   endTitle: {
     fontSize: 36,
-    textAlign: 'center',
+    textAlign: "center",
   },
   endSubtitle: {
     fontSize: 18,
-    textAlign: 'center',
+    textAlign: "center",
     opacity: 0.7,
   },
   endStats: {
     fontSize: 16,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 8,
   },
   resetButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: "#4CAF50",
     paddingHorizontal: 32,
     paddingVertical: 16,
     borderRadius: 24,
     marginTop: 24,
   },
   resetButtonText: {
-    color: 'white',
+    color: "white",
     fontSize: 16,
   },
   viewLikesButton: {
-    backgroundColor: '#2196F3',
+    backgroundColor: "#2196F3",
     paddingHorizontal: 32,
     paddingVertical: 16,
     borderRadius: 24,
     marginTop: 8,
   },
   viewLikesButtonText: {
-    color: 'white',
+    color: "white",
     fontSize: 16,
+  },
+
+  smallButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 2,
+    borderColor: "#e8e8e8",
+  },
+
+  mainButton: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 2,
+  },
+
+  dislikeButton: {
+    borderColor: "#5a5a5a",
+  },
+
+  likeButton: {
+    borderColor: "#5a5a5a",
   },
 });
