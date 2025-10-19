@@ -2,24 +2,52 @@ import { ItemCard } from "@/components/item-card";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Item, MOCK_ITEMS } from "@/data/mock-items";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useState } from "react";
-import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { Item } from "@/data/mock-items";
+import { useState, useEffect } from "react";
+import { StyleSheet, TouchableOpacity, View, ActivityIndicator } from "react-native";
+import api from "@/api/axios";
 
 export default function SwipeScreen() {
+  const [items, setItems] = useState<Item[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [likedItems, setLikedItems] = useState<Item[]>([]);
-  const colorScheme = useColorScheme();
+  const [loading, setLoading] = useState(true);
+
+  // Fetch items from backend
+  const fetchItems = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get('/items/feed');
+      const fetchedItems = response.data.map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        brand_code: '',
+        brand_name: '',
+        image_url: `https://m.media-amazon.com/images/G/01/Shopbop/p${item.image_url_suffix}`,
+        categories: [],
+      }));
+      setItems(fetchedItems);
+    } catch (error) {
+      console.error('Error fetching items:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch on component mount
+  useEffect(() => {
+    fetchItems();
+  }, []);
 
   const handleSwipeLeft = () => {
-    console.log("Disliked:", MOCK_ITEMS[currentIndex].name);
+    console.log("Disliked:", items[currentIndex]?.name);
     setCurrentIndex((prevIndex) => prevIndex + 1);
   };
 
   const handleSwipeRight = () => {
-    const likedItem = MOCK_ITEMS[currentIndex];
-    console.log("Liked:", likedItem.name);
+    const likedItem = items[currentIndex];
+    console.log("Liked:", likedItem?.name);
+    setLikedItems(prev => [...prev, likedItem]);
     setCurrentIndex((prevIndex) => prevIndex + 1);
   };
 
@@ -31,9 +59,46 @@ export default function SwipeScreen() {
     handleSwipeRight();
   };
 
-  const currentItem = MOCK_ITEMS[currentIndex];
-  const nextItem =
-    currentIndex + 1 < MOCK_ITEMS.length ? MOCK_ITEMS[currentIndex + 1] : null;
+  // Loading state
+  if (loading) {
+    return (
+      <ThemedView style={styles.container}>
+        <View style={styles.endContainer}>
+          <ActivityIndicator size="large" color="#c97c7e" />
+          <ThemedText style={{ marginTop: 16 }}>Loading items...</ThemedText>
+        </View>
+      </ThemedView>
+    );
+  }
+
+  // No items or end state
+  if (items.length === 0 || currentIndex >= items.length) {
+    return (
+      <ThemedView style={styles.container}>
+        <View style={styles.endContainer}>
+          <ThemedText type="title">No More Items!</ThemedText>
+          <ThemedText style={styles.endSubtitle}>
+            You've seen all available items
+          </ThemedText>
+          <ThemedText style={styles.endStats}>
+            Liked: {likedItems.length} items
+          </ThemedText>
+          <TouchableOpacity
+            style={styles.resetButton}
+            onPress={() => {
+              setCurrentIndex(0);
+              fetchItems();
+            }}
+          >
+            <ThemedText style={styles.resetButtonText}>Start Over</ThemedText>
+          </TouchableOpacity>
+        </View>
+      </ThemedView>
+    );
+  }
+
+  const currentItem = items[currentIndex];
+  const nextItem = currentIndex + 1 < items.length ? items[currentIndex + 1] : null;
 
   return (
     <ThemedView style={styles.container}>
@@ -41,6 +106,9 @@ export default function SwipeScreen() {
       <View style={styles.header}>
         <ThemedText type="title" style={styles.logo}>
           Bop-Browse
+        </ThemedText>
+        <ThemedText style={styles.stats}>
+          {currentIndex + 1} / {items.length}
         </ThemedText>
       </View>
 
@@ -118,7 +186,11 @@ const styles = StyleSheet.create({
   },
   logo: {
     fontSize: 28,
-    marginBottom: 12,
+    marginBottom: 8,
+  },
+  stats: {
+    fontSize: 14,
+    color: "#666",
   },
   cardContainer: {
     flex: 1,
@@ -145,50 +217,12 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
-  infoButton: {
-    borderWidth: 2,
-    borderColor: "#ddd",
-    position: "relative",
-  },
-  badge: {
-    position: "absolute",
-    top: -4,
-    right: -4,
-    backgroundColor: "#FF5252",
-    borderRadius: 10,
-    width: 20,
-    height: 20,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  badgeText: {
-    color: "white",
-    fontSize: 12,
-    fontWeight: "bold",
-  },
-  hintContainer: {
-    position: "absolute",
-    bottom: 120,
-    alignSelf: "center",
-    backgroundColor: "rgba(0,0,0,0.7)",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-  },
-  hintText: {
-    color: "white",
-    fontSize: 14,
-  },
   endContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
     gap: 16,
-  },
-  endTitle: {
-    fontSize: 36,
-    textAlign: "center",
   },
   endSubtitle: {
     fontSize: 18,
@@ -201,7 +235,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   resetButton: {
-    backgroundColor: "#4CAF50",
+    backgroundColor: "#c97c7e",
     paddingHorizontal: 32,
     paddingVertical: 16,
     borderRadius: 24,
@@ -210,19 +244,8 @@ const styles = StyleSheet.create({
   resetButtonText: {
     color: "white",
     fontSize: 16,
+    fontWeight: "600",
   },
-  viewLikesButton: {
-    backgroundColor: "#2196F3",
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    borderRadius: 24,
-    marginTop: 8,
-  },
-  viewLikesButtonText: {
-    color: "white",
-    fontSize: 16,
-  },
-
   smallButton: {
     width: 56,
     height: 56,
@@ -230,19 +253,10 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#e8e8e8",
   },
-
   mainButton: {
     width: 80,
     height: 80,
     borderRadius: 40,
     borderWidth: 2,
-  },
-
-  dislikeButton: {
-    borderColor: "#5a5a5a",
-  },
-
-  likeButton: {
-    borderColor: "#5a5a5a",
   },
 });
