@@ -14,6 +14,7 @@ export default function SwipeScreen() {
   const [loading, setLoading] = useState(true);
 
   // Fetch items from backend
+  // This should be ran whenever user has swiped 75% of the current items
   const fetchItems = async () => {
     try {
       setLoading(true);
@@ -106,9 +107,6 @@ export default function SwipeScreen() {
       <View style={styles.header}>
         <ThemedText type="title" style={styles.logo}>
           Bop-Browse
-        </ThemedText>
-        <ThemedText style={styles.stats}>
-          {currentIndex + 1} / {items.length}
         </ThemedText>
       </View>
 
