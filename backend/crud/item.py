@@ -1,7 +1,7 @@
 
 from typing import List
 
-from sqlalchemy import desc
+from sqlalchemy import desc, func
 from models.item import Item
 from models.associations import item_category, item_outfit
 
@@ -24,21 +24,19 @@ def get_items_by_categories_filter(db, category_ids: List[int], offset: int = 0,
     if not category_ids:
         return (
             db.query(Item)
-            .order_by(desc(Item.id))
-            .offset(offset)
+            .order_by(func.random())
             .limit(limit)
             .all()
         )
     
     query = (
-        db.query(item_category)
-        .filter(item_category.c.category_id.in_(category_ids))
-        .distinct(item_category.c.item_id)
-        .order_by(desc(item_category.c.item_id))
-        .offset(offset)
+        db.query(Item)
+        .filter(Item.categories.any(item_category.c.category_id.in_(category_ids)))
+        .order_by(func.random())
         .limit(limit)
+
     )
-    item_ids = [row.item_id for row in query.all()]
+    item_ids = [row.id for row in query.all()]
     return (
         db.query(Item)
         .filter(Item.id.in_(item_ids))
@@ -109,10 +107,10 @@ if __name__ == "__main__":
     db = SessionLocal()
 
     # test get by category
-    category_ids = ["74369", "74373"]
+    category_ids = []
     category_names = [cat.name for cat in db.query(Category).filter(Category.id.in_(category_ids)).all()]
     print("Categories:", category_names)
-    items = get_items_by_categories_filter(db, category_ids=category_ids, offset=11, limit=10)
+    items = get_items_by_categories_filter(db, category_ids=category_ids, offset=0, limit=2)
     for item in items:
         print(item.id, item.name)
         print("\t", [cat.name for cat in item.categories])

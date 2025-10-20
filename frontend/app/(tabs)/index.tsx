@@ -12,6 +12,7 @@ export default function SwipeScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [likedItems, setLikedItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
 
   // Fetch items from backend
   // This should be ran whenever user has swiped 75% of the current items
@@ -35,11 +36,49 @@ export default function SwipeScreen() {
     }
   };
 
+  // Fetch more items and clean up old ones
+  const fetchMoreItems = async () => {
+    if (isFetchingMore) return;
+    
+    try {
+      setIsFetchingMore(true);
+      const response = await api.get('/items/feed');
+      const fetchedItems = response.data.map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        brand_code: '',
+        brand_name: '',
+        image_url: `https://m.media-amazon.com/images/G/01/Shopbop/p${item.image_url_suffix}`,
+        categories: [],
+      }));
+      
+      setItems(prevItems => {
+        // Remove items before current index to prevent memory issues
+        const itemsToKeep = prevItems.slice(currentIndex);
+        return [...itemsToKeep, ...fetchedItems];
+      });
+      
+      // Reset currentIndex since we've removed old items
+      setCurrentIndex(0);
+    } catch (error) {
+      console.error('Error fetching more items:', error);
+    } finally {
+      setIsFetchingMore(false);
+    }
+  };
+
   // Fetch on component mount
   useEffect(() => {
     fetchItems();
   }, []);
 
+  // Check if we need to fetch more items when currentIndex changes
+  useEffect(() => {
+    const threshold = Math.floor(items.length * 0.75);
+    if (items.length > 0 && currentIndex >= threshold && !loading && !isFetchingMore) {
+      fetchMoreItems();
+    }
+  }, [currentIndex, items.length]);
   const handleSwipeLeft = () => {
     console.log("Disliked:", items[currentIndex]?.name);
     setCurrentIndex((prevIndex) => prevIndex + 1);
