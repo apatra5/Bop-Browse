@@ -7,6 +7,7 @@ import Animated, {
   withSpring,
   withTiming,
   runOnJS,
+  interpolate,
 } from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { ThemedText } from "./themed-text";
@@ -72,14 +73,22 @@ export function ItemCard({
     opacity: opacity.value,
   }));
 
+  // Green overlay for LIKE
+  const likeOverlayStyle = useAnimatedStyle(() => {
+    const opacity = interpolate(translateX.value, [0, SWIPE_THRESHOLD], [0, 0.35], "clamp");
+    return { opacity: translateX.value > 0 ? opacity : 0 };
+  });
+
+  // Red overlay for DISLIKE
+  const dislikeOverlayStyle = useAnimatedStyle(() => {
+    const opacity = interpolate(translateX.value, [-SWIPE_THRESHOLD, 0], [0.35, 0], "clamp");
+    return { opacity: translateX.value < 0 ? opacity : 0 };
+  });
+
   if (!isTop) {
     return (
       <View style={[styles.card, styles.cardBelow]}>
-        <Image
-          source={{ uri: item.image_url }}
-          style={styles.image}
-          contentFit="cover"
-        />
+        <Image source={{ uri: item.image_url }} style={styles.image} contentFit="cover" />
       </View>
     );
   }
@@ -94,7 +103,25 @@ export function ItemCard({
           transition={300}
         />
 
-        {/* Dark gradient overlay at bottom */}
+        {/* Green overlay for LIKE */}
+        <Animated.View
+          style={[
+            styles.colorOverlay,
+            { backgroundColor: "#4CAF50" },
+            likeOverlayStyle,
+          ]}
+        />
+
+        {/* Red overlay for DISLIKE */}
+        <Animated.View
+          style={[
+            styles.colorOverlay,
+            { backgroundColor: "#F44336" },
+            dislikeOverlayStyle,
+          ]}
+        />
+
+        {/* Bottom info gradient */}
         <LinearGradient
           colors={["transparent", "rgba(0,0,0,0.8)"]}
           style={styles.gradient}
@@ -146,14 +173,19 @@ const styles = StyleSheet.create({
     height: "100%",
     position: "absolute",
   },
+  colorOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 1,
+  },
   gradient: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    height: "40%", // how tall the fade is
+    height: "40%",
     justifyContent: "flex-end",
     padding: 20,
+    zIndex: 3,
   },
   infoContainer: {
     gap: 8,
