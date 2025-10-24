@@ -4,6 +4,7 @@ import { Stack, useRouter } from 'expo-router';
 
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
+import api from '../../api/axios';
 
 export default function SignUpScreen() {
   const router = useRouter();
@@ -12,6 +13,8 @@ export default function SignUpScreen() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   
   // Track which fields have been touched
   const [touched, setTouched] = useState({
@@ -49,10 +52,27 @@ export default function SignUpScreen() {
   const canCreate = !Object.values(validation).some(error => error !== '');
 
   const onCreate = async () => {
-    // Mock account creation
-    await new Promise((r) => setTimeout(r, 600));
-    // After create, navigate to the welcome confirmation screen
-    router.push('./welcome');
+    setError('');
+    setLoading(true);
+    try {
+      const resp = await api.post('/users/', { username, password });
+      if (resp.status === 201) {
+        router.push('./welcome');
+      } else if (resp.status === 400) {
+        setError(resp.data?.detail || 'Bad request');
+      } else {
+        setError('Server error');
+      }
+    } catch (err: any) {
+      const status = err?.response?.status;
+      if (status === 400) {
+        setError(err.response?.data?.detail || 'Username already registered');
+      } else {
+        setError('Server error');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -68,7 +88,7 @@ export default function SignUpScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.formWrap}>
+      <View style={styles.formWrap}>
             <ThemedText type="title" style={{ marginBottom: 32 }}>Create an Account</ThemedText>
 
         <View style={styles.inputContainer}>
@@ -134,13 +154,15 @@ export default function SignUpScreen() {
           {touched.confirm && validation.confirm && <ThemedText style={styles.helperText}>{validation.confirm}</ThemedText>}
         </View>
 
+        {error ? <ThemedText style={styles.helperText}>{error}</ThemedText> : null}
+
         <TouchableOpacity 
-          style={[styles.createButton, !canCreate && styles.createButtonDisabled]} 
+          style={[styles.createButton, (!canCreate || loading) && styles.createButtonDisabled]} 
           onPress={onCreate} 
-          disabled={!canCreate} 
+          disabled={!canCreate || loading} 
           activeOpacity={0.8}
         >
-          <ThemedText style={styles.createText}>Create Account</ThemedText>
+          <ThemedText style={styles.createText}>{loading ? 'Creating…' : 'Create Account'}</ThemedText>
         </TouchableOpacity>
 
             <TouchableOpacity onPress={() => router.push('./signin')} style={styles.signinRow}>
