@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     paddingHorizontal: 28,
-    paddingTop: 12,
+    paddingTop: 60,
     justifyContent: 'center',
     transform: [{ translateY: -20 }],
     backgroundColor: '#ffffff',
@@ -240,23 +240,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 28,
+    fontSize: 34,
     textAlign: 'center',
     marginTop: 4,
   },
   byline: {
     marginTop: 6,
-    fontSize: 12,
+    fontSize: 14,
     color: '#666',
     marginBottom: 16,
     textAlign: 'center',
   },
   hero: {
     width: '100%',
-    height: 360,
+    height: 520,
     borderRadius: 12,
     backgroundColor: '#eee',
-    marginBottom: 16,
+    marginBottom: 12,
     // subtle shadow for iOS
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
@@ -266,8 +266,8 @@ const styles = StyleSheet.create({
   },
   carouselWrapper: {
     width: '100%',
-    height: 360,
-    marginBottom: 16,
+    height: 520,
+    marginBottom: 12,
     overflow: 'hidden',
   },
   dotsContainer: {
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   caption: {
-    fontSize: 15,
+    fontSize: 14,
     color: '#333',
     marginBottom: 18,
     textAlign: 'center',
