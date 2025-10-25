@@ -8,7 +8,7 @@ import { ThemedText } from '@/components/themed-text';
 export default function SignupSuccess() {
   const router = useRouter();
 
-  const go = () => router.replace('/(tabs)');
+  const go = () => router.replace('./welcome');
 
   // animation refs
   const scale = useRef(new Animated.Value(0)).current;
@@ -40,7 +40,7 @@ export default function SignupSuccess() {
       </View>
 
       <TouchableOpacity style={styles.startButton} onPress={go} activeOpacity={0.8}>
-        <ThemedText style={styles.startText}>Start Browse</ThemedText>
+        <ThemedText style={styles.startText}>Continue</ThemedText>
       </TouchableOpacity>
     </ThemedView>
   );

@@ -57,7 +57,7 @@ export default function SignUpScreen() {
     try {
       const resp = await api.post('/users/', { username, password });
       if (resp.status === 201) {
-        router.push('./welcome');
+        router.push('./signup_success');
       } else if (resp.status === 400) {
         setError(resp.data?.detail || 'Bad request');
       } else {
