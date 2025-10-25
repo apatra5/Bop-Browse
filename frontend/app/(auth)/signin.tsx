@@ -21,7 +21,7 @@ export default function SignInScreen() {
     try {
       // Using GET /users/{username} per API; successful 200 means user exists
       await api.get(`/users/${encodeURIComponent(username)}`);
-      router.replace('/(tabs)');
+      router.push('./welcome');
     } catch (err: any) {
       // Axios-style error handling
       const status = err?.response?.status;
