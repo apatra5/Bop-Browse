@@ -13,6 +13,10 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Quiet very noisy third-party loggers that print batch/progress info
+for noisy in ("sentence_transformers", "transformers", "torch", "urllib3", "httpx"):
+    logging.getLogger(noisy).setLevel(logging.WARNING)
+
 def compute_item_embedding(model: SentenceTransformer, item_descriptions: List[str]):
     embedding = model.encode(item_descriptions)
     embedding = [float(x) for x in embedding.tolist()]
@@ -20,7 +24,7 @@ def compute_item_embedding(model: SentenceTransformer, item_descriptions: List[s
 
     return embedding
 
-START_OFFSET = 0
+START_OFFSET = 1400
 
 if __name__ == "__main__":
     # update every single item in the database with its embedding
