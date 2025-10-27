@@ -99,6 +99,19 @@ def delete_all_items(db) -> int:
     db.commit()
     return deleted
 
+"""
+CRUD for POC recommender prototype
+"""
+def get_items_by_category(db, category_id: str, limit: int = 10) -> List[Item]:
+    """Retrieve items by category ID with a limit."""
+    return (
+        db.query(Item)
+        .filter(Item.categories.any(item_category.c.category_id == category_id))
+        .order_by(Item.id)
+        .limit(limit)
+        .all()
+    )
+
 
 
 if __name__ == "__main__":
