@@ -47,9 +47,9 @@ def get_items_by_categories_filter(db, category_ids: List[int], offset: int = 0,
 """
 Basic CRUD operations for Item model. These will be used by the database population/synchronization script
 """
-def create_item(db, id: str, name: str, image_url_suffix: str = None) -> Item:
+def create_item(db, id: str, name: str, image_url_suffix: str = None, embedding = None) -> Item:
     """Create a new item."""
-    db_item = Item(id=id, name=name, image_url_suffix=image_url_suffix)
+    db_item = Item(id=id, name=name, image_url_suffix=image_url_suffix, embedding=embedding)
     db.add(db_item)
     db.commit()
     db.refresh(db_item)
@@ -67,13 +67,16 @@ def get_items_count(db) -> int:
     """Get the total count of items."""
     return db.query(Item).count()
 
-def update_item(db, id: str, name: str, image_url_suffix: str = None) -> Item:
+def update_item(db, id: str, name: str = None, image_url_suffix: str = None, embedding = None) -> Item:
     """Update an existing item."""
     db_item = db.query(Item).filter(Item.id == id).first()
     if db_item:
-        db_item.name = name
+        if name is not None:
+            db_item.name = name
         if image_url_suffix is not None:
             db_item.image_url_suffix = image_url_suffix
+        if embedding is not None:
+            db_item.embedding = embedding
         db.add(db_item)
         db.commit()
         db.refresh(db_item)
