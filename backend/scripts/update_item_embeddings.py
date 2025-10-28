@@ -24,7 +24,7 @@ def compute_item_embedding(model: SentenceTransformer, item_descriptions: List[s
 
     return embedding
 
-START_OFFSET = 1400
+START_OFFSET = 0
 
 if __name__ == "__main__":
     # update every single item in the database with its embedding
@@ -42,10 +42,19 @@ if __name__ == "__main__":
 
         for i, item in enumerate(items):
             embedding = compute_item_embedding(model, item.name)
-            update_item(db, id=item.id, embedding=embedding)
+            result = update_item(db, id=item.id, embedding=embedding)
+            if result.embedding is None:
+                logger.error(f"Failed to update embedding for item ID={item.id}, Name={item.name}")
 
         logger.info(f"Updated items up to offset {offset + batch_size}.")
 
         # print validation for one item in this batch
         item = get_all_items(db, offset=offset, limit=1)[0]
+        if item is None or item.embedding is None:
+            # try again
+            item = get_all_items(db, offset=offset, limit=1)[0]
+            if item is None or item.embedding is None:
+                logger.error(f"Failed to retrieve updated item at offset {offset}")
+                continue
+
         logger.info(f"Sample updated item: ID={item.id}, Name={item.name}, Embedding (first 5 dims)={item.embedding[:5]}")
