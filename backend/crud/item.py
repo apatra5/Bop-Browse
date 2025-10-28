@@ -116,7 +116,7 @@ def get_items_by_category(db, category_id: str, limit: int = 10) -> List[Item]:
     )
 
 """
-CRUD with vector lookup
+CRUD with vector lookup. Mostly just for POC but can be useful in the future to build the recommendation system
 """
 def get_kNN_by_vector(db, query_vector: List[float], top_k: int = 10) -> List[Item]:
     """
