@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, ForeignKey, Table, Integer
+from sqlalchemy import Boolean, Column, String, ForeignKey, Table, Integer
 from db.base import Base
 
 item_category = Table(
@@ -19,7 +19,8 @@ user_like_items = Table(
     'user_like_items',
     Base.metadata,
     Column('user_id', Integer, ForeignKey('users.id'), primary_key=True),
-    Column('item_id', String, ForeignKey('items.id'), primary_key=True)
+    Column('item_id', String, ForeignKey('items.id'), primary_key=True),
+    Column('show_in_closet', Boolean, default=True)
 )
 
 user_dislike_items = Table(
