@@ -169,7 +169,7 @@ def get_similar_unseen_items_for_user(db, item_id: str, user_id: str, top_k: int
         .filter(Item.embedding != None)
         .filter(Item.id != item_id)
         .filter(~Item.liked_by_users.any(user_id=user_id))
-        .filter(~Item.disliked_by_users.any(user_id=user_id))
+        .filter(~Item.disliked_by_users.any(id=user_id))
         .order_by(text(f"embedding <-> {vec_literal}::vector"))
         .limit(top_k)
         .all()
@@ -198,14 +198,24 @@ def _test_get_kNN_by_item():
     from db.session import SessionLocal
     db = SessionLocal()
 
-    item_id = "1551231198"  # replace with a valid item ID from your database
+    item_id = "1551231198"  
     similar_items = get_kNN_by_item_id(db, item_id=item_id, top_k=10)
     print(f"Top 5 items similar to item ID {item_id}:")
     for item in similar_items:
         print(f"Item ID: {item.id}, Name: {item.name}")
 
+def _test_similar_unseen_items():
+    from db.session import SessionLocal
+    db = SessionLocal()
+
+    item_id = "1551231198" 
+    user_id = 1
+
+    similar_unseen_items = get_similar_unseen_items_for_user(db, item_id=item_id, user_id=user_id, top_k=10)
+    print(f"Top 10 similar unseen items for user ID {user_id} based on item ID {item_id}:")
+    for item in similar_unseen_items:
+        print(f"Item ID: {item.id}, Name: {item.name}")
+    
 
 if __name__ == "__main__":
-    _test_get_kNN_by_item()
-
-        
+    _test_similar_unseen_items()
