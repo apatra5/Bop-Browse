@@ -4,12 +4,17 @@ from models.associations import UserLikeItems, user_dislike_items
 
 def like_item(db, user_id: int, item_id: str):
     """Add an item to the user's liked items."""
-    user = db.query(User).filter(User.id == user_id).first()
-    item = db.query(Item).filter(Item.id == item_id).first()
-    if item not in user.liked_items:
-        user.liked_items.append(item)
+    query = (
+        db.query(UserLikeItems)
+        .filter(UserLikeItems.user_id == user_id)
+        .filter(UserLikeItems.item_id == item_id)
+    )
+
+    if query.first() is None:
+        user_like_item = UserLikeItems(user_id=user_id, item_id=item_id, show_in_closet=True)
+        db.add(user_like_item)
         db.commit()
-    return user
+    return query.first()
 
 
 def dislike_item(db, user_id: int, item_id: str):
@@ -65,6 +70,8 @@ def remove_from_liked_items(db, user_id: int, item_id: str):
 if __name__ == "__main__":
     from db.session import SessionLocal
     db = SessionLocal()
+    ret = like_item(db, user_id=1, item_id="1555064075")
+    print(f"Liked item: {ret}")
     user_1_liked_items = get_user_liked_items(db, user_id=1)
     print(f"User 1 liked items: {user_1_liked_items}")
     user_1_liked_items_closet = get_user_liked_items_for_closet_display(db, user_id=1)

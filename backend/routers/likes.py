@@ -25,9 +25,9 @@ def like_item(
 ):
     """Like an item - adds it to the user's liked items"""
     try:
-        user = crud_likes.like_item(db, user_id=like_data.user_id, item_id=like_data.item_id)
+        result = crud_likes.like_item(db, user_id=like_data.user_id, item_id=like_data.item_id)
         
-        if user is None:
+        if result is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User or item not found"
