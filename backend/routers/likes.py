@@ -25,9 +25,9 @@ def like_item(
 ):
     """Like an item - adds it to the user's liked items"""
     try:
-        user = crud_likes.like_item(db, user_id=like_data.user_id, item_id=like_data.item_id)
+        result = crud_likes.like_item(db, user_id=like_data.user_id, item_id=like_data.item_id)
         
-        if user is None:
+        if result is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User or item not found"
@@ -52,7 +52,7 @@ def get_user_likes(
 ):
     """Get all items liked by a user"""
     try:
-        liked_items = crud_likes.get_user_liked_items(db, user_id=user_id)
+        liked_items = crud_likes.get_user_liked_items_for_closet_display(db, user_id=user_id)
         
         if liked_items is None:
             raise HTTPException(
@@ -77,9 +77,9 @@ def unlike_item(
 ):
     """Unlike an item - removes it from the user's liked items"""
     try:
-        user = crud_likes.remove_from_liked_items(db, user_id=like_data.user_id, item_id=like_data.item_id)
+        item = crud_likes.remove_liked_items_from_closet_display(db, user_id=like_data.user_id, item_id=like_data.item_id)
         
-        if user is None:
+        if item is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User or item not found"

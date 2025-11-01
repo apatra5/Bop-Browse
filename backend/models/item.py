@@ -3,7 +3,7 @@ from sqlalchemy.orm import relationship
 from pgvector.sqlalchemy import Vector
 
 from db.base import Base
-from .associations import item_category, item_outfit, user_dislike_items, user_like_items
+from .associations import item_category, item_outfit, user_dislike_items, UserLikeItems
 
 class Item(Base):
     __tablename__ = "items"
@@ -15,7 +15,7 @@ class Item(Base):
     categories = relationship("Category", secondary=item_category, back_populates="items")
     outfits = relationship("Outfit", secondary=item_outfit, back_populates="items")
 
-    liked_by_users = relationship("User", secondary=user_like_items, back_populates="liked_items")
+    liked_by_users = relationship("UserLikeItems", back_populates="item")
     disliked_by_users = relationship("User", secondary=user_dislike_items, back_populates="disliked_items")
 
 

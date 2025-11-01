@@ -1,4 +1,5 @@
-from sqlalchemy import Column, String, ForeignKey, Table, Integer
+from sqlalchemy import Boolean, Column, String, ForeignKey, Table, Integer
+from sqlalchemy.orm import relationship
 from db.base import Base
 
 item_category = Table(
@@ -15,12 +16,14 @@ item_outfit = Table(
     Column('outfit_id', String, ForeignKey('outfits.id'), primary_key=True),
 )
 
-user_like_items = Table(
-    'user_like_items',
-    Base.metadata,
-    Column('user_id', Integer, ForeignKey('users.id'), primary_key=True),
-    Column('item_id', String, ForeignKey('items.id'), primary_key=True)
-)
+class UserLikeItems(Base):
+    __tablename__ = 'user_like_items'
+    user_id = Column(Integer, ForeignKey('users.id'), primary_key=True)
+    item_id = Column(String, ForeignKey('items.id'), primary_key=True)
+    show_in_closet = Column(Boolean, default=True)
+
+    user = relationship("User", back_populates="liked_items")
+    item = relationship("Item", back_populates="liked_by_users")
 
 user_dislike_items = Table(
     'user_dislike_items',
