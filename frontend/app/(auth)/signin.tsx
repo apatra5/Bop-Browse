@@ -6,6 +6,7 @@ import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 
 import api from '../../api/axios';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function SignInScreen() {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function SignInScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const auth = useAuth();
 
   const onSignIn = async () => {
     // Quick login: check user existence by username
@@ -21,6 +23,8 @@ export default function SignInScreen() {
     try {
       // Using GET /users/{username} per API; successful 200 means user exists
       await api.get(`/users/${encodeURIComponent(username)}`);
+      // set username in global auth context so other screens can access it
+      auth.signIn(username);
       router.push('./welcome');
     } catch (err: any) {
       // Axios-style error handling
