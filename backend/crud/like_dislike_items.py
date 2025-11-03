@@ -1,6 +1,6 @@
 from models.user import User
 from models.item import Item
-from models.associations import UserLikeItems, user_dislike_items
+from models.associations import UserLikeItems, user_dislike_items, item_category
 
 def like_item(db, user_id: int, item_id: str):
     """Add an item to the user's liked items."""
@@ -66,6 +66,32 @@ def remove_from_liked_items(db, user_id: int, item_id: str):
         user.liked_items.remove(item)
         db.commit()
     return user
+
+
+def get_user_liked_items_by_category(db, user_id: int, category_id: str):
+    """Retrieve liked items for a user filtered by category."""
+    # Get item IDs that the user has liked
+    liked_item_ids = (
+        db.query(UserLikeItems.item_id)
+        .filter(UserLikeItems.user_id == user_id)
+        .filter(UserLikeItems.show_in_closet == True)
+    ).all()
+    
+    liked_item_ids = [item_id for (item_id,) in liked_item_ids]
+    
+    if not liked_item_ids:
+        return []
+    
+    # Get items that match both: liked by user AND in the specified category
+    items = (
+        db.query(Item)
+        .join(item_category)
+        .filter(Item.id.in_(liked_item_ids))
+        .filter(item_category.c.category_id == category_id)
+        .all()
+    )
+    
+    return items
 
 if __name__ == "__main__":
     from db.session import SessionLocal

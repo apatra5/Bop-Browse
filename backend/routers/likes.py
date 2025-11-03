@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 
 from db.session import SessionLocal
 from crud import like_dislike_items as crud_likes
@@ -94,4 +94,26 @@ def unlike_item(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error unliking item: {str(e)}"
+        )
+
+
+@router.get("/by-category/{user_id}", response_model=List[ItemOut])
+def get_user_likes_by_category(
+    user_id: int,
+    category_id: str = Query(..., description="Category ID to filter liked items"),
+    db: Session = Depends(get_db)
+):
+    """Get all liked items for a user filtered by category"""
+    try:
+        liked_items = crud_likes.get_user_liked_items_by_category(
+            db, 
+            user_id=user_id, 
+            category_id=category_id
+        )
+        
+        return liked_items
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error fetching liked items by category: {str(e)}"
         )
