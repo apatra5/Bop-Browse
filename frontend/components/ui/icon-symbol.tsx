@@ -21,6 +21,7 @@ const MAPPING = {
   'chevron.right': 'chevron-right',
   'chevron.up': 'keyboard-arrow-up',  // Add this
   'chevron.down': 'keyboard-arrow-down',  // Add this
+  'chevron.left': 'chevron-left',
   'xmark': 'close',           
   'heart.fill': 'favorite',
   'person.fill': 'person',  // Add if missing
