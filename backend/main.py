@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from routers import user as user_router
 from routers import category as category_router
@@ -8,6 +9,15 @@ from routers import outfit as outfit_router
 from routers import dislikes as dislikes_router
 
 app = FastAPI(title="Bop-Browse Backend")
+
+# Add CORS middleware to allow frontend connections
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # For development - allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(user_router.router)
 app.include_router(category_router.router)
