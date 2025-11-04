@@ -1,10 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
   TouchableOpacity,
   FlatList,
   Dimensions,
+  Image,
 } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -20,7 +21,7 @@ const NUM_COLUMNS = 3;
 const ITEM_SIZE = Math.floor((width - ITEM_MARGIN * (NUM_COLUMNS + 1)) / NUM_COLUMNS);
 
 export default function ClosetScreen() {
-  const { username } = useAuth();
+  const { userId } = useAuth();
   const router = useRouter();
   const colorScheme = useColorScheme();
 
@@ -39,18 +40,59 @@ export default function ClosetScreen() {
   );
 
   const [selectedCategory, setSelectedCategory] = useState('All Items');
-
-  // Mock items (placeholder) with categories assigned so the UI can filter.
+  // Mock items (placeholder) used until server data loads.
   const mockItems = useMemo(() => {
     return Array.from({ length: 12 }).map((_, i) => ({
       id: String(i),
       title: `Item ${i + 1}`,
       // assign categories cyclically (skip 'Outfit' for variety)
       category: categories[(i % (categories.length - 1)) + 1],
+      imageUrl: undefined,
     }));
   }, [categories]);
+  type ClosetItem = {
+    id: string;
+    title: string;
+    category?: string;
+    imageUrl?: string | undefined;
+  };
 
-  const visibleItems = mockItems.filter(
+  const [items, setItems] = useState<ClosetItem[]>(mockItems as ClosetItem[]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const IMAGE_PREFIX = 'https://m.media-amazon.com/images/G/01/Shopbop/p';
+
+  useEffect(() => {
+    // fetch liked items for the signed-in user
+    const fetchLikes = async () => {
+      if (!userId) return;
+      setLoading(true);
+      setError(null);
+      try {
+        // use API helper (axios) to GET /likes/{userId}
+        // import path uses alias; adjust if necessary
+        const api = (await import('@/api/axios')).default;
+        const resp = await api.get(`/likes/${encodeURIComponent(userId)}`);
+        const data = Array.isArray(resp?.data) ? resp.data : [];
+        const mapped = data.map((it: any) => ({
+          id: String(it.id),
+          title: it.name,
+          imageUrl: it.image_url_suffix ? IMAGE_PREFIX + it.image_url_suffix : undefined,
+          // no category provided by this endpoint; keep undefined so only 'All Items' shows them
+        }));
+        setItems(mapped);
+      } catch (err: any) {
+        console.error('Failed to fetch likes', err);
+        setError('Failed to load likes');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLikes();
+  }, [userId]);
+
+  const visibleItems = items.filter(
     (it) => selectedCategory === 'All Items' || it.category === selectedCategory
   );
 
@@ -76,7 +118,7 @@ export default function ClosetScreen() {
 
       <View style={styles.topMeta}>
         <ThemedText style={styles.subtitle}>
-          {username ? `Hello, ${username}` : 'Not signed in'}
+          {userId ? `Hello, ${userId}` : 'Not signed in'}
         </ThemedText>
       </View>
 
@@ -103,11 +145,15 @@ export default function ClosetScreen() {
         contentContainerStyle={styles.grid}
         renderItem={({ item }) => (
           <View style={styles.gridItem}>
-            <View style={styles.thumbPlaceholder} />
+            {item.imageUrl ? (
+              <Image source={{ uri: item.imageUrl }} style={styles.thumbImage} />
+            ) : (
+              <View style={styles.thumbPlaceholder} />
+            )}
             <ThemedText type="defaultSemiBold" style={styles.itemTitle} numberOfLines={2}>
               {item.title}
             </ThemedText>
-            <ThemedText style={styles.itemCategory}>{item.category}</ThemedText>
+            {item.category ? <ThemedText style={styles.itemCategory}>{item.category}</ThemedText> : null}
           </View>
         )}
         ListEmptyComponent={() => (
@@ -174,6 +220,12 @@ const styles = StyleSheet.create({
     height: ITEM_SIZE,
     backgroundColor: '#efefef',
     borderRadius: 8,
+  },
+  thumbImage: {
+    width: '100%',
+    height: ITEM_SIZE,
+    borderRadius: 8,
+    backgroundColor: '#efefef',
   },
   itemTitle: { marginTop: 6, fontSize: 12 },
   itemCategory: { fontSize: 11, color: '#888' },

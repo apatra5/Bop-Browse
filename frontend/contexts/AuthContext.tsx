@@ -1,22 +1,22 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 type AuthContextValue = {
-  username: string | null;
-  setUsername: (u: string | null) => void;
-  signIn: (u: string) => void;
+  userId: string | null;
+  setUserId: (u: string | null) => void;
+  signIn: (id: string) => void;
   signOut: () => void;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [username, setUsername] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
-  const signIn = (u: string) => setUsername(u);
-  const signOut = () => setUsername(null);
+  const signIn = (id: string) => setUserId(id);
+  const signOut = () => setUserId(null);
 
   return (
-    <AuthContext.Provider value={{ username, setUsername, signIn, signOut }}>
+    <AuthContext.Provider value={{ userId, setUserId, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );

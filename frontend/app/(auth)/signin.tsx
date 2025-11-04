@@ -22,9 +22,11 @@ export default function SignInScreen() {
     setLoading(true);
     try {
       // Using GET /users/{username} per API; successful 200 means user exists
-      await api.get(`/users/${encodeURIComponent(username)}`);
-      // set username in global auth context so other screens can access it
-      auth.signIn(username);
+        const res = await api.get(`/users/${encodeURIComponent(username)}`);
+        // server returns user object with `id` field — store that id in auth
+        const id = res?.data?.id;
+        if (!id) throw new Error('Missing user id');
+        auth.signIn(id);
       router.push('./welcome');
     } catch (err: any) {
       // Axios-style error handling
