@@ -1,3 +1,4 @@
+from sqlalchemy import func
 from models.user import User
 from models.item import Item
 from models.associations import UserLikeItems, user_dislike_items, item_category
@@ -93,7 +94,21 @@ def get_user_liked_items_by_category(db, user_id: int, category_id: str):
     
     return items
 
-if __name__ == "__main__":
+def get_user_liked_items_randomized(db, user_id:int, limit:int=10):
+    """Retrieve a randomized list of item IDs liked by the user."""
+    query = (
+        db.query(UserLikeItems.item_id)
+        .filter(UserLikeItems.user_id == user_id)
+        .order_by(func.random())
+        .limit(limit)
+    )
+    return [item for (item,) in query.all()]
+
+
+""""
+Manual tests
+"""
+def _test_user_like_dislike_closet():
     from db.session import SessionLocal
     db = SessionLocal()
     ret = like_item(db, user_id=1, item_id="1555064075")
@@ -108,3 +123,12 @@ if __name__ == "__main__":
     print(f"User 1 liked items for closet display after removal: {user_1_liked_items_closet_after}")
     user_1_liked_items_after = get_user_liked_items(db, user_id=1)
     print(f"User 1 liked items after removal from closet display: {user_1_liked_items_after}")
+
+def _test_get_random_liked_items():
+    from db.session import SessionLocal
+    db = SessionLocal()
+    items = get_user_liked_items_randomized(db, user_id=1, limit=5)
+    print(f"Random liked items for user 1: {items}")
+
+if __name__ == "__main__":
+    _test_get_random_liked_items()

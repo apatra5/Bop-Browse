@@ -115,6 +115,18 @@ def get_items_by_category(db, category_id: str, limit: int = 10) -> List[Item]:
         .all()
     )
 
+def get_random_unseen_items_from_categories(db, user_id:str, category_ids: List[str], limit: int = 10) -> List[Item]:
+    """Retrieve random items from specified categories with a limit."""
+    return (
+        db.query(Item)
+        .filter(Item.categories.any(item_category.c.category_id.in_(category_ids)))
+        .filter(~Item.liked_by_users.any(user_id=user_id))
+        .filter(~Item.disliked_by_users.any(id=user_id))
+        .order_by(func.random())
+        .limit(limit)
+        .all()
+    )
+
 """
 CRUD with vector lookup. Mostly just for POC but can be useful in the future to build the recommendation system
 """
