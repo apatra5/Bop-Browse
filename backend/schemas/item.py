@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel
 
 
@@ -9,3 +9,8 @@ class ItemOut(BaseModel):
 
     class Config:
         orm_mode = True
+
+class PersonalizedFeedRequest(BaseModel):
+    user_id: int
+    category_ids: Optional[List[str]] = []
+    limit: Optional[int] = 10

@@ -1,7 +1,7 @@
 
 from typing import List
 
-from sqlalchemy import desc, func
+from sqlalchemy import desc, func, text
 from models.item import Item
 from models.associations import item_category, item_outfit
 
@@ -115,9 +115,97 @@ def get_items_by_category(db, category_id: str, limit: int = 10) -> List[Item]:
         .all()
     )
 
+def get_random_unseen_items_from_categories(db, user_id:str, category_ids: List[str], limit: int = 10) -> List[Item]:
+    """Retrieve random items from specified categories with a limit."""
+    query = db.query(Item)
+    if category_ids and len(category_ids) > 0:
+        query = query.filter(Item.categories.any(item_category.c.category_id.in_(category_ids)))
+
+    query = (
+        query
+        .filter(~Item.liked_by_users.any(user_id=user_id))
+        .filter(~Item.disliked_by_users.any(id=user_id))
+        .order_by(func.random())
+        .limit(limit)
+    )
+    
+    return query.all()
+
+"""
+CRUD with vector lookup. Mostly just for POC but can be useful in the future to build the recommendation system
+"""
+def get_kNN_by_vector(db, query_vector: List[float], top_k: int = 10) -> List[Item]:
+    """
+    Retrieve kNN for a given vector. Only for POC to see if a centroid vector of user's likes can work well with this lookup method as a standalone recommendation algorithm.
+    If this doesn't work, I'll consider using an engineering approach like randomly choosing liked items and find their kNNs, then aggregate the results, and also add some random items to prevent local convergence. 
+    """
+     # Perform vector similarity search
+    return (
+        db.query(Item)
+        .filter(Item.embedding != None)
+        .order_by(text(f"embedding <-> {query_vector}::vector"))
+        .limit(top_k)
+        .all()
+    )
+
+def get_kNN_by_item_id(db, item_id: str, top_k: int = 10) -> List[Item]:
+    """
+    Given an item ID, retrieve top-k similar items based on embedding.
+    Might be useful for a lot of scenarios, like similar item recommendations, or use as a building block for the item feed. 
+    """
+    lookup_by_item = get_item_by_id(db, item_id)
+    if lookup_by_item is None or lookup_by_item.embedding is None:
+        return []
+
+    vec_literal = '\'[' + ','.join(map(str, lookup_by_item.embedding)) + ']\''
+
+    # Perform vector similarity search
+    return (
+        db.query(Item)
+        .filter(Item.embedding != None)
+        .filter(Item.id != item_id)
+        .order_by(text(f"embedding <-> {vec_literal}::vector"))
+        .limit(top_k)
+        .all()
+    )
+
+def get_similar_unseen_items_for_user(db, item_id: str, user_id: str, top_k: int = 10, category_ids: List[str] = []) -> List[Item]:
+    """
+    Given an item ID and a user ID, retrieve top-k similar items based on embedding,
+    excluding items that the user has already liked or disliked.
+    """
+    lookup_by_item = get_item_by_id(db, item_id)
+    if lookup_by_item is None or lookup_by_item.embedding is None:
+        return []
+
+    vec_literal = '\'[' + ','.join(map(str, lookup_by_item.embedding)) + ']\''
+
+    query = db.query(Item)
+
+    if category_ids and len(category_ids) > 0:
+        query = query.filter(Item.categories.any(item_category.c.category_id.in_(category_ids)))
+
+     # Perform vector similarity search
+
+    query = (
+        query
+        .filter(Item.embedding != None)
+        .filter(Item.id != item_id)
+        .filter(~Item.liked_by_users.any(user_id=user_id))
+        .filter(~Item.disliked_by_users.any(id=user_id))
+        .order_by(text(f"embedding <-> {vec_literal}::vector"))
+        .limit(top_k)
+    )
 
 
-if __name__ == "__main__":
+    return query.all()
+
+
+"""
+Manual tests
+"""
+
+def _test_get_by_category():
     from db.session import SessionLocal
     from models.category import Category
     db = SessionLocal()
@@ -131,4 +219,28 @@ if __name__ == "__main__":
         print(item.id, item.name)
         print("\t", [cat.name for cat in item.categories])
 
-        
+def _test_get_kNN_by_item():
+    from db.session import SessionLocal
+    db = SessionLocal()
+
+    item_id = "1551231198"  
+    similar_items = get_kNN_by_item_id(db, item_id=item_id, top_k=10)
+    print(f"Top 5 items similar to item ID {item_id}:")
+    for item in similar_items:
+        print(f"Item ID: {item.id}, Name: {item.name}")
+
+def _test_similar_unseen_items():
+    from db.session import SessionLocal
+    db = SessionLocal()
+
+    item_id = "1551231198" 
+    user_id = 1
+
+    similar_unseen_items = get_similar_unseen_items_for_user(db, item_id=item_id, user_id=user_id, top_k=10)
+    print(f"Top 10 similar unseen items for user ID {user_id} based on item ID {item_id}:")
+    for item in similar_unseen_items:
+        print(f"Item ID: {item.id}, Name: {item.name}")
+    
+
+if __name__ == "__main__":
+    _test_similar_unseen_items()

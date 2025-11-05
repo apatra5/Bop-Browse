@@ -247,21 +247,106 @@ curl -X GET "http://localhost:8000/items/feed?category_ids=74369,74373&limit=20&
 - When `category_ids` is empty or omitted, returns items from all categories
 - For Tinder-like experience, fetch in batches and prefetch next batch when user reaches 75% of current batch
 
+#### 2. Personalized Items Feed (POST)
 
+Returns a personalized feed of items for a user based on their like history and optional category filters. Use this when you want server-side personalized recommendations (the POST body contains the user and filters).
 
-#### 2. Get Item Pictures
+**Endpoint:** `POST /items/personalized-feed`
+
+**Request Body:**
+
+***NOT QUERY PARAMETERS***
+
+| Field        | Type         | Required | Description |
+| ------------ | ------------ | -------- | ----------- |
+| user_id      | integer      | Yes      | ID of the user to generate feed for |
+| category_ids | array[string]| No       | List of category IDs to constrain recommendations (empty = all) |
+| limit        | integer      | No       | Max number of items to return (default: 10) |
+
+**Example Request:**
+
+```json
+{
+  "user_id": 1,
+  "category_ids": ["74369","74373"],
+  "limit": 10
+}
+```
+
+**Success Response:**
+
+**Status Code:** `200 OK`
+
+Response body is an array of item objects (same shape as ItemOut):
+
+```json
+[
+  {
+    "id": "1558160009",
+    "name": "Serena Skirt",
+    "image_url_suffix": "/prod/products/euglv/euglv3000226329/euglv3000226329_1746722497373_2-0.jpg"
+  },
+  {
+    "id": "1563553380",
+    "name": "Serena Skirt",
+    "image_url_suffix": "/prod/products/euglv/euglv30001235d7/euglv30001235d7_1745354727837_2-0.jpg"
+  },
+  {
+    "id": "1569133891",
+    "name": "Prix Quinny Pleated Skirt",
+    "image_url_suffix": "/prod/products/tupsi/tupsi3048312708/tupsi3048312708_1753136383560_2-0.jpg"
+  },
+  {
+    "id": "1569991194",
+    "name": "Laver Cadiz Pleated Skirt",
+    "image_url_suffix": "/prod/products/tupsi/tupsi304571c925/tupsi304571c925_1742317281953_2-0.jpg"
+  },
+  {
+    "id": "1503613319",
+    "name": "Catrine Quilted Shorts",
+    "image_url_suffix": "/prod/products/varle/varle3043936163/varle3043936163_1742321123954_2-0.jpg"
+  },
+  {
+    "id": "1574594972",
+    "name": "Pacific Jaynee Mini Skirt",
+    "image_url_suffix": "/prod/products/tupsi/tupsi304691c925/tupsi304691c925_1744835400205_2-0.jpg"
+  },
+  {
+    "id": "1537438289",
+    "name": "Sculptflex Power High Rise Leggings",
+    "image_url_suffix": "/prod/products/setac/setac3003513128/setac3003513128_1744822600878_2-0.jpg"
+  },
+  {
+    "id": "1522029182",
+    "name": "Airluxe Breathe Mini Shorts",
+    "image_url_suffix": "/prod/products/setac/setac3002424c18/setac3002424c18_1744746216420_2-0.jpg"
+  },
+  {
+    "id": "1545845232",
+    "name": "HEAD x Veronica Beard Skort",
+    "image_url_suffix": "/prod/products/heads/heads300061a3d7/heads300061a3d7_1749135034771_2-0.jpg"
+  },
+  {
+    "id": "1569133891",
+    "name": "Prix Quinny Pleated Skirt",
+    "image_url_suffix": "/prod/products/tupsi/tupsi3048312708/tupsi3048312708_1753136383560_2-0.jpg"
+  }
+]
+```
+
+#### 3. Get Item Pictures
 
 Use Shopbop API
 
 
 
-#### 3. Get Item Details
+#### 4. Get Item Details
 
 Use Shopbop API
 
 
 
-#### 4. Get Item Outfits
+#### 5. Get Item Outfits
 
 Use Shopbop API
 
