@@ -4,7 +4,8 @@ from sqlalchemy.orm import Session
 
 from db.session import SessionLocal
 from crud import item as crud_item
-from schemas.item import ItemOut
+from recommender import recommender
+from schemas.item import ItemOut, PersonalizedFeedRequest
 
 router = APIRouter(prefix="/items", tags=["items"])
 
@@ -27,4 +28,18 @@ def get_feed(
 	"""Return items feed, optionally filtered by category. Returns all items if no category specified."""
 	category_ids = [category_id] if category_id is not None else []
 	items = crud_item.get_items_by_categories_filter(db, category_ids, offset=offset, limit=limit)
+	return items
+
+@router.post("/personalized-feed", response_model=List[ItemOut])
+def get_personalized_feed(
+	request: PersonalizedFeedRequest,
+	db: Session = Depends(get_db),
+):
+	"""Return a personalized item feed for the user based on their like history and specified categories."""
+	items = recommender.get_personalized_item_feed_for_user(
+		db,
+		user_id=request.user_id,
+		category_ids=request.category_ids or [],
+		limit=request.limit or 10
+	)
 	return items
