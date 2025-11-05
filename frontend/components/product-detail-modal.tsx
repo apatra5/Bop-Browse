@@ -19,6 +19,7 @@ import Animated, {
 import { IconSymbol } from "./ui/icon-symbol";
 import { ThemedText } from "./themed-text";
 import { Item } from "@/data/mock-items";
+import { OutfitLookCard } from "./outfit-look-card"; // Import the new component
 
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 
@@ -30,7 +31,6 @@ interface ProductDetailModalProps {
 
 interface OutfitData {
   styleColorOutfits: any[];
-  // Add other fields as you discover them from the API response
 }
 
 export function ProductDetailModal({
@@ -41,12 +41,10 @@ export function ProductDetailModal({
   const translateY = useSharedValue(SCREEN_HEIGHT);
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // State for fetched data
   const [outfitData, setOutfitData] = useState<OutfitData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch outfit data when modal opens
   useEffect(() => {
     if (visible && !outfitData) {
       fetchOutfitData();
@@ -86,7 +84,6 @@ export function ProductDetailModal({
     }
   };
 
-  // Animate open
   useEffect(() => {
     if (visible) {
       translateY.value = withTiming(0, {
@@ -96,7 +93,6 @@ export function ProductDetailModal({
     }
   }, [visible]);
 
-  // Close animation and reset data
   const close = () => {
     translateY.value = withTiming(
       SCREEN_HEIGHT,
@@ -119,6 +115,11 @@ export function ProductDetailModal({
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
   }));
+
+  const handleShopLookClick = (outfit: any) => {
+    console.log('Shop the look clicked for outfit:', outfit.id);
+    // Add your navigation or action logic here
+  };
 
   if (!visible) return null;
 
@@ -145,7 +146,6 @@ export function ProductDetailModal({
             showsVerticalScrollIndicator={false}
             bounces={true}
           >
-            {/* Show loading state */}
             {loading && (
               <View style={styles.centerContainer}>
                 <ActivityIndicator size="large" color="#d49595" />
@@ -153,7 +153,6 @@ export function ProductDetailModal({
               </View>
             )}
 
-            {/* Show error state with retry */}
             {error && (
               <View style={styles.centerContainer}>
                 <ThemedText style={styles.errorText}>{error}</ThemedText>
@@ -163,15 +162,19 @@ export function ProductDetailModal({
               </View>
             )}
 
-            {/* Show success message - will replace with actual content later */}
-            {outfitData && (
-              <View style={styles.centerContainer}>
-                <ThemedText style={styles.successText}>
-                  ✓ Data loaded successfully!
-                </ThemedText>
-                <ThemedText style={styles.debugText}>
-                  {JSON.stringify(outfitData, null, 2).substring(0, 200)}...
-                </ThemedText>
+            {outfitData && outfitData.styleColorOutfits && (
+              <View>
+                {outfitData.styleColorOutfits.map((styleColorOutfit, index) => 
+                  styleColorOutfit.outfits?.map((outfit: any, outfitIndex: number) => (
+                    <OutfitLookCard
+                      key={`${index}-${outfitIndex}`}
+                      outfitData={outfit}
+                      lookTitle={`Look ${outfitIndex + 1}`}
+                      imageBaseUrl="https://m.media-amazon.com/images/G/01/Shopbop/p"
+                      onShopClick={handleShopLookClick}
+                    />
+                  ))
+                )}
               </View>
             )}
           </ScrollView>
@@ -245,17 +248,5 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontSize: 16,
     fontWeight: "600",
-  },
-  successText: {
-    fontSize: 18,
-    color: "#4CAF50",
-    fontWeight: "600",
-    marginBottom: 16,
-  },
-  debugText: {
-    fontSize: 12,
-    color: "#666",
-    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
-    textAlign: "left",
   },
 });
