@@ -10,6 +10,7 @@ class Item(Base):
     id = Column(String, primary_key=True, index=True)
     name = Column(String)
     image_url_suffix = Column(String, nullable=True)
+    product_detail_url = Column(String, nullable=True)
     embedding = Column(Vector(768), nullable=True)
 
     categories = relationship("Category", secondary=item_category, back_populates="items")
