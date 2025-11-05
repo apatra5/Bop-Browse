@@ -13,13 +13,20 @@ type IconSymbolName = keyof typeof MAPPING;
  * - see Material Icons in the [Icons Directory](https://icons.expo.fyi).
  * - see SF Symbols in the [SF Symbols](https://developer.apple.com/sf-symbols/) app.
  */
+// frontend/components/ui/icon-symbol.tsx
 const MAPPING = {
   'house.fill': 'home',
   'paperplane.fill': 'send',
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
+  'chevron.up': 'keyboard-arrow-up',  // Add this
+  'chevron.down': 'keyboard-arrow-down',  // Add this
   'xmark': 'close',           
-  'heart.fill': 'favorite',  
+  'heart.fill': 'favorite',
+  'person.fill': 'person',  // Add if missing
+  'cart': 'shopping-cart',  // Add if missing
+  'bag': 'shopping-bag',  // Add if missing
+  'arrow.counterclockwise': 'refresh',  // Add if missing
 } as IconMapping;
 
 /**
