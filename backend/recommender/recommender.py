@@ -3,7 +3,7 @@ Logic for recommending items based on user's like history and item similarities.
 Using crud operations to fetch data from the database.
 """
 
-from ast import List
+from typing import List
 from crud.like_dislike_items import get_user_liked_items_randomized
 from crud.item import get_similar_unseen_items_for_user, get_random_unseen_items_from_categories
 
