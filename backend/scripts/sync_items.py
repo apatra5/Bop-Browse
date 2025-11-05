@@ -94,6 +94,9 @@ class SyncItems:
             total_item_scanned += len(response.get("products", []))
             products = response.get("products", [])
 
+            if not products or len(products) == 0:
+                break
+
             for product in products:
                 item = ProductInfo(product_sin=product["product"].get("productSin"), short_description=product["product"].get("shortDescription"), image_url_suffix=product["product"]["colors"][0]["images"][0]["src"], product_detail_url=product["product"].get("productDetailUrl"))
                 self._add_or_update_item(item, category_path=category.path)
