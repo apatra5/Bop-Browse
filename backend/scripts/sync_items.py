@@ -34,10 +34,11 @@ class LeafCategoryInfo(CategoryInfo):
     
 class ProductInfo:
     # Info: ProductSin (str), ShortDescription (str)
-    def __init__(self, product_sin: str, short_description: str, image_url_suffix: str = None):
+    def __init__(self, product_sin: str, short_description: str, image_url_suffix: str = None, product_detail_url: str = None):
         self.product_sin = product_sin
         self.short_description = short_description
         self.image_url_suffix = image_url_suffix
+        self.product_detail_url = product_detail_url
 
     def __str__(self):
         return f"ProductInfo(product_sin={self.product_sin}, short_description={self.short_description})"
@@ -94,7 +95,7 @@ class SyncItems:
             products = response.get("products", [])
 
             for product in products:
-                item = ProductInfo(product_sin=product["product"].get("productSin"), short_description=product["product"].get("shortDescription"), image_url_suffix=product["product"]["colors"][0]["images"][0]["src"])
+                item = ProductInfo(product_sin=product["product"].get("productSin"), short_description=product["product"].get("shortDescription"), image_url_suffix=product["product"]["colors"][0]["images"][0]["src"], product_detail_url=product["product"].get("productDetailUrl"))
                 self._add_or_update_item(item, category_path=category.path)
 
 
@@ -117,12 +118,12 @@ class SyncItems:
         db_item = crud_item.get_item_by_id(self.db, id=item.product_sin)
         if not db_item:
             self.added_items += 1
-            db_item = crud_item.create_item(self.db, id=item.product_sin, name=item.short_description, image_url_suffix=item.image_url_suffix)
+            db_item = crud_item.create_item(self.db, id=item.product_sin, name=item.short_description, image_url_suffix=item.image_url_suffix, product_detail_url=item.product_detail_url)
         
         else: 
             # update existing item
             self.updated_existing_items += 1
-            db_item = crud_item.update_item(self.db, id=item.product_sin, name=item.short_description, image_url_suffix=item.image_url_suffix)
+            db_item = crud_item.update_item(self.db, id=item.product_sin, name=item.short_description, image_url_suffix=item.image_url_suffix, product_detail_url=item.product_detail_url)
 
         # Update category associations
         for category in category_path:
@@ -190,5 +191,4 @@ class SyncItems:
 
 if __name__ == "__main__":
     syncer = SyncItems()
-    syncer.cleanTables()
     syncer.sync()
