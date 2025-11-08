@@ -11,7 +11,7 @@ def get_category(db, category_id: str) -> Category:
 
 def get_all_categories(db) -> list[Category]:
     """Retrieve all categories."""
-    return db.query(Category).all()
+    return db.query(Category).order_by(Category.itemCount.desc()).all()
 
 def create_category(db, id: str, name: str, itemCount: int) -> Category:
     """Create a new category."""
@@ -53,4 +53,18 @@ def get_categories_count(db) -> int:
     """Get the total count of categories."""
     return db.query(Category).count()
 
+def refresh_item_counts(db):
+    """Refresh itemCount for all categories based on current associations."""
+    categories = db.query(Category).all()
+    for category in categories:
+        item_count = db.query(item_category).filter(item_category.c.category_id == category.id).count()
+        category.itemCount = item_count
+        db.add(category)
+    db.commit()
 
+if __name__ == "__main__":
+    from db.session import SessionLocal
+
+    db = SessionLocal()
+    refresh_item_counts(db)
+    db.close()
