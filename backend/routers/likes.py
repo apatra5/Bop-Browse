@@ -5,7 +5,7 @@ from typing import List, Optional
 from db.session import SessionLocal
 from crud import like_dislike_items as crud_likes
 from schemas.like import LikeRequest, LikeResponse, UserLikesResponse
-from schemas.item import ItemOut
+from schemas.item import ItemOut, ItemWithCategories
 
 router = APIRouter(prefix="/likes", tags=["likes"])
 
@@ -45,7 +45,7 @@ def like_item(
         )
 
 
-@router.get("/{user_id}", response_model=List[ItemOut])
+@router.get("/{user_id}", response_model=List[ItemWithCategories])
 def get_user_likes(
     user_id: int,
     db: Session = Depends(get_db)

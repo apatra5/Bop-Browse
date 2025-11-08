@@ -1,6 +1,8 @@
 from typing import Optional, List
 from pydantic import BaseModel
 
+from schemas.category import CategoryOut
+
 
 class ItemOut(BaseModel):
     id: str
@@ -15,3 +17,9 @@ class PersonalizedFeedRequest(BaseModel):
     user_id: int
     category_ids: Optional[List[str]] = []
     limit: Optional[int] = 10
+
+class ItemWithCategories(ItemOut):
+    categories: List[CategoryOut] = []
+
+    class Config:
+        orm_mode = True

@@ -1,4 +1,5 @@
 from sqlalchemy import func
+from sqlalchemy.orm import selectinload
 from models.user import User
 from models.item import Item
 from models.associations import UserLikeItems, user_dislike_items, item_category
@@ -30,7 +31,11 @@ def dislike_item(db, user_id: int, item_id: str):
 
 def get_user_liked_items(db, user_id: int):
     """Retrieve all items liked by the user."""
-    user = db.query(User).filter(User.id == user_id).first()
+    user = (
+        db.query(User)
+        .filter(User.id == user_id)
+        .first()
+    )
     return user.liked_items
 
 def get_user_liked_items_for_closet_display(db, user_id: int):
@@ -43,6 +48,9 @@ def get_user_liked_items_for_closet_display(db, user_id: int):
     items = (
         db.query(Item)
         .filter(Item.id.in_([item_id for (item_id,) in item_ids]))
+        .options(
+            selectinload(Item.categories)
+        )
     ).all()
 
     return items
