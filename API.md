@@ -372,6 +372,40 @@ Retrieves a list of all available categories.
 
 **Status Code:** `200 OK`
 
+```json
+[
+  {
+    "id": "13266",
+    "name": "Clothing",
+    "itemCount": 16683
+  },
+  {
+    "id": "13351",
+    "name": "Dresses",
+    "itemCount": 4221
+  },
+  {
+    "id": "13332",
+    "name": "Tops",
+    "itemCount": 3987
+  },
+  {
+    "id": "62708",
+    "name": "Inclusive Sizes",
+    "itemCount": 2837
+  },
+  {
+    "id": "13346",
+    "name": "Matching Sets",
+    "itemCount": 2232
+  },
+  {
+    "id": "13311",
+    "name": "Swimsuits & Cover-Ups",
+    "itemCount": 2011
+  },
+...]
+```
 
 
 ## Likes API ==TODO==

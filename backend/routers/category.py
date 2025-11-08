@@ -22,3 +22,8 @@ def read_category(category_id: str, db: Session = Depends(get_db)):
 	if not category:
 		raise HTTPException(status_code=404, detail="Category not found")
 	return category
+
+@router.get("/", response_model=list[CategoryOut])
+def get_all_categories(db: Session = Depends(get_db)):
+	categories = crud_category.get_all_categories(db)
+	return categories
