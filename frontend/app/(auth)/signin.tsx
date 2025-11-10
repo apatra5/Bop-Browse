@@ -6,6 +6,7 @@ import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 
 import api from '../../api/axios';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function SignInScreen() {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function SignInScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const auth = useAuth();
 
   const onSignIn = async () => {
     // Quick login: check user existence by username
@@ -20,7 +22,12 @@ export default function SignInScreen() {
     setLoading(true);
     try {
       // Using GET /users/{username} per API; successful 200 means user exists
-      await api.get(`/users/${encodeURIComponent(username)}`);
+        const res = await api.get(`/users/${encodeURIComponent(username)}`);
+        // server returns user object with `id` field — store that id in auth
+  const id = res?.data?.id;
+  const fetchedUsername = res?.data?.username ?? username;
+  if (!id) throw new Error('Missing user id');
+  auth.signIn(id, fetchedUsername);
       router.push('./welcome');
     } catch (err: any) {
       // Axios-style error handling

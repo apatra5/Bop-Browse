@@ -11,8 +11,10 @@ import {
   ActivityIndicator,
 } from "react-native";
 import api from "@/api/axios";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function SwipeScreen() {
+  const { userId } = useAuth();
   const [items, setItems] = useState<Item[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [likedItems, setLikedItems] = useState<Item[]>([]);
@@ -110,16 +112,39 @@ export default function SwipeScreen() {
     }
   }, [currentIndex, items.length]);
 
-  const handleSwipeLeft = () => {
-    console.log("Disliked:", items[currentIndex]?.name);
-    setCurrentIndex((prevIndex) => prevIndex + 1);
+  const handleSwipeLeft = async () => {
+    const current = items[currentIndex];
+    try {
+      if (current && userId) {
+        await api.post("/dislikes/", {
+          user_id: Number(userId),
+          item_id: String(current.id),
+        });
+      }
+    } catch (err) {
+      console.error("Error disliking item:", err);
+    } finally {
+      console.log("Disliked:", current?.name);
+      setCurrentIndex((prevIndex) => prevIndex + 1);
+    }
   };
 
-  const handleSwipeRight = () => {
+  const handleSwipeRight = async () => {
     const likedItem = items[currentIndex];
-    console.log("Liked:", likedItem?.name);
-    setLikedItems((prev) => [...prev, likedItem]);
-    setCurrentIndex((prevIndex) => prevIndex + 1);
+    try {
+      if (likedItem && userId) {
+        await api.post("/likes/", {
+          user_id: Number(userId),
+          item_id: String(likedItem.id),
+        });
+      }
+    } catch (err) {
+      console.error("Error liking item:", err);
+    } finally {
+      console.log("Liked:", likedItem?.name);
+      setLikedItems((prev) => (likedItem ? [...prev, likedItem] : prev));
+      setCurrentIndex((prevIndex) => prevIndex + 1);
+    }
   };
 
   const handleDislikePress = () => {
