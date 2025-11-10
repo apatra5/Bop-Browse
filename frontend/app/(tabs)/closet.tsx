@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   View,
@@ -15,11 +15,15 @@ import { Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useFocusEffect } from '@react-navigation/native';
 
 const { width } = Dimensions.get('window');
 const ITEM_MARGIN = 10;
 const NUM_COLUMNS = 3;
-const ITEM_SIZE = Math.floor((width - ITEM_MARGIN * (NUM_COLUMNS + 1)) / NUM_COLUMNS);
+// Keep in sync with styles.container paddingHorizontal
+const SCREEN_PADDING = 14;
+const CONTENT_WIDTH = width - SCREEN_PADDING * 2;
+const ITEM_SIZE = Math.floor((CONTENT_WIDTH - ITEM_MARGIN * (NUM_COLUMNS + 1)) / NUM_COLUMNS);
 // Maintain the requested image box aspect ratio: 1128 x 2000 (W x H)
 const ITEM_ASPECT_H_OVER_W = 2000 / 1128; // ~1.773
 const ITEM_HEIGHT = Math.floor(ITEM_SIZE * ITEM_ASPECT_H_OVER_W);
@@ -63,6 +67,7 @@ export default function ClosetScreen() {
   const [items, setItems] = useState<ClosetItem[]>(mockItems as ClosetItem[]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [removing, setRemoving] = useState<Record<string, boolean>>({});
 
   const IMAGE_PREFIX = 'https://m.media-amazon.com/images/G/01/Shopbop/p';
   const PRODUCT_PREFIX = 'https://shopbop.com/'
@@ -95,48 +100,82 @@ export default function ClosetScreen() {
     fetchCategoryIds();
   }, [PREDEFINED_CATEGORY_NAMES]);
 
-  useEffect(() => {
-    // fetch likes depending on the selectedCategory
-    const fetchLikes = async () => {
-      if (!userId) return;
-      setLoading(true);
-      setError(null);
-      try {
-        const api = (await import('@/api/axios')).default;
+  const fetchLikes = useCallback(async () => {
+    if (!userId) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const api = (await import('@/api/axios')).default;
 
-        let resp: any;
-        if (selectedCategory === 'All Items' || selectedCategory === 'Outfit') {
-          resp = await api.get(`/likes/${encodeURIComponent(userId)}`);
+      let resp: any;
+      if (selectedCategory === 'All Items' || selectedCategory === 'Outfit') {
+        resp = await api.get(`/likes/${encodeURIComponent(userId)}`);
+      } else {
+        const lookupId = categoryIdMap[selectedCategory];
+        if (lookupId) {
+          resp = await api.get(`/likes/by-category/${encodeURIComponent(userId)}`, {
+            params: { category_id: lookupId },
+          });
         } else {
-          const lookupId = categoryIdMap[selectedCategory];
-          if (lookupId) {
-            resp = await api.get(`/likes/by-category/${encodeURIComponent(userId)}`, {
-              params: { category_id: lookupId },
-            });
-          } else {
-            // If we couldn't resolve the category id, fall back to all likes
-            resp = await api.get(`/likes/${encodeURIComponent(userId)}`);
-          }
+          // If we couldn't resolve the category id, fall back to all likes
+          resp = await api.get(`/likes/${encodeURIComponent(userId)}`);
         }
-
-        const data = Array.isArray(resp?.data) ? resp.data : [];
-        const mapped: ClosetItem[] = data.map((it: any) => ({
-          id: String(it.id),
-          title: it.name,
-          imageUrl: it.image_url_suffix ? IMAGE_PREFIX + it.image_url_suffix : undefined,
-          productUrl: it.product_detail_url ?  PRODUCT_PREFIX + it.product_detail_url : undefined,
-        }));
-        setItems(mapped);
-        console.log(mapped);
-      } catch (err: any) {
-        console.error('Failed to fetch likes', err);
-        setError('Failed to load likes');
-      } finally {
-        setLoading(false);
       }
-    };
-    fetchLikes();
+
+      const data = Array.isArray(resp?.data) ? resp.data : [];
+      console.log(data);
+      const mapped: ClosetItem[] = data.map((it: any) => ({
+        id: String(it.id),
+        title: it.name,
+        imageUrl: it.image_url_suffix ? IMAGE_PREFIX + it.image_url_suffix : undefined,
+        productUrl: it.product_detail_url ?  PRODUCT_PREFIX + it.product_detail_url : undefined,
+      }));
+      setItems(mapped);
+    } catch (err: any) {
+      console.error('Failed to fetch likes', err);
+      setError('Failed to load likes');
+    } finally {
+      setLoading(false);
+    }
   }, [userId, selectedCategory, categoryIdMap]);
+
+  // Run when dependencies change (e.g., category selection), and also on focus
+  useEffect(() => {
+    fetchLikes();
+  }, [fetchLikes]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchLikes();
+    }, [fetchLikes])
+  );
+
+  const handleRemove = useCallback(async (itemId: string) => {
+    if (!userId) return;
+    // Optimistic UI: mark removing and remove locally
+    setRemoving((prev) => ({ ...prev, [itemId]: true }));
+    const prevItems = items;
+    setItems((curr) => curr.filter((it) => it.id !== itemId));
+    try {
+      const api = (await import('@/api/axios')).default;
+      await api.delete('/likes/', {
+        data: {
+          user_id: Number(userId),
+          item_id: String(itemId),
+        },
+      });
+    } catch (e) {
+      console.error('Failed to unlike item', e);
+      // Rollback by refetching to ensure consistency
+      setItems(prevItems);
+    } finally {
+      setRemoving((prev) => {
+        const copy = { ...prev };
+        delete copy[itemId];
+        return copy;
+      });
+    }
+  }, [userId, items, setItems]);
 
   // If a specific category is selected and we resolved its id, items are already
   // filtered by the server via /likes/by-category, so don't filter again locally.
@@ -196,18 +235,24 @@ export default function ClosetScreen() {
         keyExtractor={(i) => i.id}
         numColumns={NUM_COLUMNS}
         contentContainerStyle={styles.grid}
+        columnWrapperStyle={{ gap: ITEM_MARGIN }}
         renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.gridItem}
-            activeOpacity={0.85}
-            onPress={() => item.productUrl && Linking.openURL(item.productUrl)}
-          >
+          <View style={styles.gridItem}>
             <View style={styles.thumbWrapper}>
               {item.imageUrl ? (
                 <Image source={{ uri: item.imageUrl }} style={styles.thumbImage} resizeMode="contain" />
               ) : (
                 <View style={styles.thumbPlaceholder} />
               )}
+              <TouchableOpacity
+                style={[styles.removeButton, removing[item.id] && { opacity: 0.4 }]}
+                onPress={() => handleRemove(item.id)}
+                disabled={!!removing[item.id]}
+                accessibilityLabel="Remove from closet"
+                hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+              >
+                <IconSymbol name="xmark" size={16} color="#333" />
+              </TouchableOpacity>
             </View>
             <View style={styles.infoRow}>
               <ThemedText style={styles.itemName} numberOfLines={2}>
@@ -216,7 +261,6 @@ export default function ClosetScreen() {
               <TouchableOpacity
                 style={styles.cartInlineButton}
                 onPress={(e) => {
-                  e.stopPropagation();
                   if (item.productUrl) Linking.openURL(item.productUrl);
                 }}
                 accessibilityLabel="View product"
@@ -224,7 +268,7 @@ export default function ClosetScreen() {
                 <IconSymbol name="cart" size={16} color="#333" />
               </TouchableOpacity>
             </View>
-          </TouchableOpacity>
+          </View>
         )}
         ListEmptyComponent={() => (
           <View style={styles.emptyWrap}>
@@ -279,10 +323,9 @@ const styles = StyleSheet.create({
   chipText: { color: '#333' },
   chipTextSelected: { color: '#704848', fontWeight: '600' },
 
-  grid: { paddingBottom: 24 },
+  grid: { paddingBottom: 24, paddingRight: ITEM_MARGIN },
   gridItem: {
     width: ITEM_SIZE,
-    marginLeft: ITEM_MARGIN,
     marginBottom: ITEM_MARGIN,
     position: 'relative',
   },
@@ -304,6 +347,12 @@ const styles = StyleSheet.create({
     height: ITEM_HEIGHT,
     borderRadius: 8,
     backgroundColor: '#efefef',
+  },
+  removeButton: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    // No background color to show only the 'X' icon
   },
   infoRow: {
     flexDirection: 'row',
