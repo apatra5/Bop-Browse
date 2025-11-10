@@ -11,6 +11,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useAuth } from '@/contexts/AuthContext';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -19,9 +20,12 @@ const { width } = Dimensions.get('window');
 const ITEM_MARGIN = 10;
 const NUM_COLUMNS = 3;
 const ITEM_SIZE = Math.floor((width - ITEM_MARGIN * (NUM_COLUMNS + 1)) / NUM_COLUMNS);
+// Maintain the requested image box aspect ratio: 1128 x 2000 (W x H)
+const ITEM_ASPECT_H_OVER_W = 2000 / 1128; // ~1.773
+const ITEM_HEIGHT = Math.floor(ITEM_SIZE * ITEM_ASPECT_H_OVER_W);
 
 export default function ClosetScreen() {
-  const { userId } = useAuth();
+  const { userId, username } = useAuth();
   const router = useRouter();
   const colorScheme = useColorScheme();
 
@@ -29,12 +33,10 @@ export default function ClosetScreen() {
     () => [
       'Outfit',
       'All Items',
-      'Top',
-      'Bottom',
-      'Dress',
-      'Skirt',
-      'Outerwear',
-      'Shoes',
+      'Tops',
+      'Bottoms',
+      'Dresses',
+      'Skirts'
     ],
     []
   );
@@ -55,6 +57,7 @@ export default function ClosetScreen() {
     title: string;
     category?: string;
     imageUrl?: string | undefined;
+    productUrl?: string | undefined;
   };
 
   const [items, setItems] = useState<ClosetItem[]>(mockItems as ClosetItem[]);
@@ -62,26 +65,69 @@ export default function ClosetScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const IMAGE_PREFIX = 'https://m.media-amazon.com/images/G/01/Shopbop/p';
+  const PRODUCT_PREFIX = 'https://shopbop.com/'
+
+  // Predefined category names we care about; we'll call /categories and extract their ids.
+  const PREDEFINED_CATEGORY_NAMES = useMemo(
+    () => ['Tops', 'Bottoms', 'Dresses', 'Skirts', 'Outerwear', 'Shoes'],
+    []
+  );
+
+  const [categoryIdMap, setCategoryIdMap] = useState<Record<string, string | null>>({});
 
   useEffect(() => {
-    // fetch liked items for the signed-in user
+    const fetchCategoryIds = async () => {
+      try {
+        const api = (await import('@/api/axios')).default;
+        const resp = await api.get('/categories');
+        const data = Array.isArray(resp?.data) ? resp.data : [];
+        const map: Record<string, string | null> = {};
+        PREDEFINED_CATEGORY_NAMES.forEach((name) => {
+          const found = data.find((c: any) => (c.name || '').toLowerCase() === name.toLowerCase());
+          map[name] = found ? String(found.id) : null;
+        });
+        setCategoryIdMap(map);
+        console.log('Resolved category ids:', map);
+      } catch (err) {
+        console.error('Failed to fetch categories for ids', err);
+      }
+    };
+    fetchCategoryIds();
+  }, [PREDEFINED_CATEGORY_NAMES]);
+
+  useEffect(() => {
+    // fetch likes depending on the selectedCategory
     const fetchLikes = async () => {
       if (!userId) return;
       setLoading(true);
       setError(null);
       try {
-        // use API helper (axios) to GET /likes/{userId}
-        // import path uses alias; adjust if necessary
         const api = (await import('@/api/axios')).default;
-        const resp = await api.get(`/likes/${encodeURIComponent(userId)}`);
+
+        let resp: any;
+        if (selectedCategory === 'All Items' || selectedCategory === 'Outfit') {
+          resp = await api.get(`/likes/${encodeURIComponent(userId)}`);
+        } else {
+          const lookupId = categoryIdMap[selectedCategory];
+          if (lookupId) {
+            resp = await api.get(`/likes/by-category/${encodeURIComponent(userId)}`, {
+              params: { category_id: lookupId },
+            });
+          } else {
+            // If we couldn't resolve the category id, fall back to all likes
+            resp = await api.get(`/likes/${encodeURIComponent(userId)}`);
+          }
+        }
+
         const data = Array.isArray(resp?.data) ? resp.data : [];
-        const mapped = data.map((it: any) => ({
+        const mapped: ClosetItem[] = data.map((it: any) => ({
           id: String(it.id),
           title: it.name,
           imageUrl: it.image_url_suffix ? IMAGE_PREFIX + it.image_url_suffix : undefined,
-          // no category provided by this endpoint; keep undefined so only 'All Items' shows them
+          productUrl: it.product_detail_url ?  PRODUCT_PREFIX + it.product_detail_url : undefined,
         }));
         setItems(mapped);
+        console.log(mapped);
       } catch (err: any) {
         console.error('Failed to fetch likes', err);
         setError('Failed to load likes');
@@ -90,11 +136,18 @@ export default function ClosetScreen() {
       }
     };
     fetchLikes();
-  }, [userId]);
+  }, [userId, selectedCategory, categoryIdMap]);
 
-  const visibleItems = items.filter(
-    (it) => selectedCategory === 'All Items' || it.category === selectedCategory
-  );
+  // If a specific category is selected and we resolved its id, items are already
+  // filtered by the server via /likes/by-category, so don't filter again locally.
+  const isServerFiltered =
+    selectedCategory !== 'All Items' &&
+    selectedCategory !== 'Outfit' &&
+    Boolean(categoryIdMap[selectedCategory]);
+
+  const visibleItems = isServerFiltered
+    ? items
+    : items.filter((it) => selectedCategory === 'All Items' || it.category === selectedCategory);
 
   return (
     <ThemedView style={styles.container}>
@@ -118,7 +171,7 @@ export default function ClosetScreen() {
 
       <View style={styles.topMeta}>
         <ThemedText style={styles.subtitle}>
-          {userId ? `Hello, ${userId}` : 'Not signed in'}
+          {userId ? `Hello, ${username ?? userId}` : 'Not signed in'}
         </ThemedText>
       </View>
 
@@ -144,17 +197,34 @@ export default function ClosetScreen() {
         numColumns={NUM_COLUMNS}
         contentContainerStyle={styles.grid}
         renderItem={({ item }) => (
-          <View style={styles.gridItem}>
-            {item.imageUrl ? (
-              <Image source={{ uri: item.imageUrl }} style={styles.thumbImage} />
-            ) : (
-              <View style={styles.thumbPlaceholder} />
-            )}
-            <ThemedText type="defaultSemiBold" style={styles.itemTitle} numberOfLines={2}>
-              {item.title}
-            </ThemedText>
-            {item.category ? <ThemedText style={styles.itemCategory}>{item.category}</ThemedText> : null}
-          </View>
+          <TouchableOpacity
+            style={styles.gridItem}
+            activeOpacity={0.85}
+            onPress={() => item.productUrl && Linking.openURL(item.productUrl)}
+          >
+            <View style={styles.thumbWrapper}>
+              {item.imageUrl ? (
+                <Image source={{ uri: item.imageUrl }} style={styles.thumbImage} resizeMode="contain" />
+              ) : (
+                <View style={styles.thumbPlaceholder} />
+              )}
+            </View>
+            <View style={styles.infoRow}>
+              <ThemedText style={styles.itemName} numberOfLines={2}>
+                {item.title}
+              </ThemedText>
+              <TouchableOpacity
+                style={styles.cartInlineButton}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  if (item.productUrl) Linking.openURL(item.productUrl);
+                }}
+                accessibilityLabel="View product"
+              >
+                <IconSymbol name="cart" size={16} color="#333" />
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
         )}
         ListEmptyComponent={() => (
           <View style={styles.emptyWrap}>
@@ -214,18 +284,44 @@ const styles = StyleSheet.create({
     width: ITEM_SIZE,
     marginLeft: ITEM_MARGIN,
     marginBottom: ITEM_MARGIN,
+    position: 'relative',
+  },
+  thumbWrapper: {
+    width: '100%',
+    height: ITEM_HEIGHT,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#efefef',
   },
   thumbPlaceholder: {
     width: '100%',
-    height: ITEM_SIZE,
+    height: ITEM_HEIGHT,
     backgroundColor: '#efefef',
     borderRadius: 8,
   },
   thumbImage: {
     width: '100%',
-    height: ITEM_SIZE,
+    height: ITEM_HEIGHT,
     borderRadius: 8,
     backgroundColor: '#efefef',
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    paddingTop: 6,
+  },
+  cartInlineButton: {
+    padding: 6,
+    borderRadius: 16,
+    backgroundColor: '#f2f2f2',
+  },
+  itemName: {
+    flex: 1,
+    color: '#333',
+    fontSize: 12,
+    fontWeight: '600',
   },
   itemTitle: { marginTop: 6, fontSize: 12 },
   itemCategory: { fontSize: 11, color: '#888' },

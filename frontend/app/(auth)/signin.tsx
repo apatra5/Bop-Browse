@@ -24,9 +24,10 @@ export default function SignInScreen() {
       // Using GET /users/{username} per API; successful 200 means user exists
         const res = await api.get(`/users/${encodeURIComponent(username)}`);
         // server returns user object with `id` field — store that id in auth
-        const id = res?.data?.id;
-        if (!id) throw new Error('Missing user id');
-        auth.signIn(id);
+  const id = res?.data?.id;
+  const fetchedUsername = res?.data?.username ?? username;
+  if (!id) throw new Error('Missing user id');
+  auth.signIn(id, fetchedUsername);
       router.push('./welcome');
     } catch (err: any) {
       // Axios-style error handling
