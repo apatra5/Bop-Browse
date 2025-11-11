@@ -1,5 +1,7 @@
 from typing import List
+from sqlalchemy.orm import Session
 from models.outfit import Outfit
+from models.item import Item
 from models.associations import item_outfit
 
 
@@ -55,3 +57,14 @@ def delete_all_outfits(db) -> int:
     count = db.query(Outfit).delete()
     db.commit()
     return count
+
+def get_outfit_by_item_id(db: Session, item_id: str) -> List[Outfit]:
+    """
+    Retrieve all outfits that contain a specific item.
+    Args:
+        db: Database session.
+        item_id (str): The ID of the item.
+    Returns:
+        List of outfit objects that contain the item.
+    """
+    return db.query(Outfit).join(item_outfit).filter(item_outfit.c.item_id == item_id).all()
