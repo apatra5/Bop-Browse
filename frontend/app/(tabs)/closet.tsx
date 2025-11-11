@@ -16,16 +16,15 @@ import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useFocusEffect } from '@react-navigation/native';
+import { ProductDetailModal } from '@/components/product-detail-modal';
 
 const { width } = Dimensions.get('window');
 const ITEM_MARGIN = 10;
 const NUM_COLUMNS = 3;
-// Keep in sync with styles.container paddingHorizontal
 const SCREEN_PADDING = 14;
 const CONTENT_WIDTH = width - SCREEN_PADDING * 2;
 const ITEM_SIZE = Math.floor((CONTENT_WIDTH - ITEM_MARGIN * (NUM_COLUMNS + 1)) / NUM_COLUMNS);
-// Maintain the requested image box aspect ratio: 1128 x 2000 (W x H)
-const ITEM_ASPECT_H_OVER_W = 2000 / 1128; // ~1.773
+const ITEM_ASPECT_H_OVER_W = 2000 / 1128;
 const ITEM_HEIGHT = Math.floor(ITEM_SIZE * ITEM_ASPECT_H_OVER_W);
 
 export default function ClosetScreen() {
@@ -46,16 +45,7 @@ export default function ClosetScreen() {
   );
 
   const [selectedCategory, setSelectedCategory] = useState('All Items');
-  // Mock items (placeholder) used until server data loads.
-  const mockItems = useMemo(() => {
-    return Array.from({ length: 12 }).map((_, i) => ({
-      id: String(i),
-      title: `Item ${i + 1}`,
-      // assign categories cyclically (skip 'Outfit' for variety)
-      category: categories[(i % (categories.length - 1)) + 1],
-      imageUrl: undefined,
-    }));
-  }, [categories]);
+  
   type ClosetItem = {
     id: string;
     title: string;
@@ -64,15 +54,18 @@ export default function ClosetScreen() {
     productUrl?: string | undefined;
   };
 
-  const [items, setItems] = useState<ClosetItem[]>(mockItems as ClosetItem[]);
+  const [items, setItems] = useState<ClosetItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [removing, setRemoving] = useState<Record<string, boolean>>({});
+  
+  // Modal state
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<ClosetItem | null>(null);
 
   const IMAGE_PREFIX = 'https://m.media-amazon.com/images/G/01/Shopbop/p';
   const PRODUCT_PREFIX = 'https://shopbop.com/'
 
-  // Predefined category names we care about; we'll call /categories and extract their ids.
   const PREDEFINED_CATEGORY_NAMES = useMemo(
     () => ['Tops', 'Bottoms', 'Dresses', 'Skirts', 'Outerwear', 'Shoes'],
     []
@@ -117,7 +110,6 @@ export default function ClosetScreen() {
             params: { category_id: lookupId },
           });
         } else {
-          // If we couldn't resolve the category id, fall back to all likes
           resp = await api.get(`/likes/${encodeURIComponent(userId)}`);
         }
       }
@@ -128,7 +120,7 @@ export default function ClosetScreen() {
         id: String(it.id),
         title: it.name,
         imageUrl: it.image_url_suffix ? IMAGE_PREFIX + it.image_url_suffix : undefined,
-        productUrl: it.product_detail_url ?  PRODUCT_PREFIX + it.product_detail_url : undefined,
+        productUrl: it.product_detail_url ? PRODUCT_PREFIX + it.product_detail_url : undefined,
       }));
       setItems(mapped);
     } catch (err: any) {
@@ -139,7 +131,6 @@ export default function ClosetScreen() {
     }
   }, [userId, selectedCategory, categoryIdMap]);
 
-  // Run when dependencies change (e.g., category selection), and also on focus
   useEffect(() => {
     fetchLikes();
   }, [fetchLikes]);
@@ -150,9 +141,13 @@ export default function ClosetScreen() {
     }, [fetchLikes])
   );
 
-  const handleRemove = useCallback(async (itemId: string) => {
+  const handleRemove = useCallback(async (itemId: string, e?: any) => {
+    // Stop propagation to prevent opening modal
+    if (e) {
+      e.stopPropagation();
+    }
+    
     if (!userId) return;
-    // Optimistic UI: mark removing and remove locally
     setRemoving((prev) => ({ ...prev, [itemId]: true }));
     const prevItems = items;
     setItems((curr) => curr.filter((it) => it.id !== itemId));
@@ -166,7 +161,6 @@ export default function ClosetScreen() {
       });
     } catch (e) {
       console.error('Failed to unlike item', e);
-      // Rollback by refetching to ensure consistency
       setItems(prevItems);
     } finally {
       setRemoving((prev) => {
@@ -177,8 +171,17 @@ export default function ClosetScreen() {
     }
   }, [userId, items, setItems]);
 
-  // If a specific category is selected and we resolved its id, items are already
-  // filtered by the server via /likes/by-category, so don't filter again locally.
+  const handleItemPress = useCallback((item: ClosetItem) => {
+    setSelectedItem(item);
+    setModalVisible(true);
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    setModalVisible(false);
+    // Small delay before clearing to allow animation to complete
+    setTimeout(() => setSelectedItem(null), 300);
+  }, []);
+
   const isServerFiltered =
     selectedCategory !== 'All Items' &&
     selectedCategory !== 'Outfit' &&
@@ -193,9 +196,7 @@ export default function ClosetScreen() {
       <View style={styles.headerRow}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => {
-            router.back();
-          }}
+          onPress={() => router.back()}
           accessibilityLabel="Go back"
         >
           <IconSymbol name="chevron.left" size={22} color={Colors[colorScheme ?? 'light'].text} />
@@ -237,7 +238,11 @@ export default function ClosetScreen() {
         contentContainerStyle={styles.grid}
         columnWrapperStyle={{ gap: ITEM_MARGIN }}
         renderItem={({ item }) => (
-          <View style={styles.gridItem}>
+          <TouchableOpacity 
+            style={styles.gridItem}
+            onPress={() => handleItemPress(item)}
+            activeOpacity={0.8}
+          >
             <View style={styles.thumbWrapper}>
               {item.imageUrl ? (
                 <Image source={{ uri: item.imageUrl }} style={styles.thumbImage} resizeMode="contain" />
@@ -246,7 +251,7 @@ export default function ClosetScreen() {
               )}
               <TouchableOpacity
                 style={[styles.removeButton, removing[item.id] && { opacity: 0.4 }]}
-                onPress={() => handleRemove(item.id)}
+                onPress={(e) => handleRemove(item.id, e)}
                 disabled={!!removing[item.id]}
                 accessibilityLabel="Remove from closet"
                 hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
@@ -261,6 +266,7 @@ export default function ClosetScreen() {
               <TouchableOpacity
                 style={styles.cartInlineButton}
                 onPress={(e) => {
+                  e.stopPropagation();
                   if (item.productUrl) Linking.openURL(item.productUrl);
                 }}
                 accessibilityLabel="View product"
@@ -268,7 +274,7 @@ export default function ClosetScreen() {
                 <IconSymbol name="cart" size={16} color="#333" />
               </TouchableOpacity>
             </View>
-          </View>
+          </TouchableOpacity>
         )}
         ListEmptyComponent={() => (
           <View style={styles.emptyWrap}>
@@ -276,6 +282,14 @@ export default function ClosetScreen() {
           </View>
         )}
       />
+
+      {selectedItem && (
+        <ProductDetailModal
+          item={selectedItem}
+          visible={modalVisible}
+          onClose={handleCloseModal}
+        />
+      )}
     </ThemedView>
   );
 }
@@ -352,7 +366,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 6,
     right: 6,
-    // No background color to show only the 'X' icon
   },
   infoRow: {
     flexDirection: 'row',
@@ -372,7 +385,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
-  itemTitle: { marginTop: 6, fontSize: 12 },
-  itemCategory: { fontSize: 11, color: '#888' },
   emptyWrap: { padding: 20, alignItems: 'center' },
 });
