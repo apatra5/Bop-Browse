@@ -25,7 +25,10 @@ export default function SwipeScreen() {
   const fetchItems = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/items/feed");
+      const response = await api.post("/items/personalized-feed", {
+        user_id: userId,
+        category_ids: [], // TODO
+      });
       const fetchedItems = response.data.map((item: any) => ({
         id: item.id,
         name: item.name,
