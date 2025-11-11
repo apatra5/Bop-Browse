@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Image, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { View, Image, Text, TouchableOpacity, StyleSheet, Dimensions, ScrollView } from 'react-native';
 
 interface OutfitLookCardProps {
   outfitData: any;
@@ -20,17 +20,15 @@ export const OutfitLookCard: React.FC<OutfitLookCardProps> = ({
 
   const { primaryImage, styleColors } = outfitData;
   const validStyleColors = styleColors?.filter((item: any) => item?.image?.src) || [];
-  const productImages = validStyleColors.slice(0, 4);
   const itemCount = validStyleColors.length;
 
-  // Ensure the function never returns null
   const getImageUrl = (src?: string): string | undefined => {
     if (!src) return undefined;
     return src.startsWith('http') ? src : `${imageBaseUrl}${src}`;
   };
 
   const primaryImageUrl = getImageUrl(primaryImage?.src);
-  if (!primaryImageUrl && productImages.length === 0) return null;
+  if (!primaryImageUrl && validStyleColors.length === 0) return null;
 
   // Layout constants
   const horizontalMargin = 16 * 2;
@@ -38,39 +36,20 @@ export const OutfitLookCard: React.FC<OutfitLookCardProps> = ({
   const outerGutters = horizontalMargin + containerPadding;
   const colGap = 12;
   const innerGap = 8;
-  const rowGap = 8;
 
   // Available width for the grid row
   const containerWidth = Math.max(0, screenWidth - outerGutters);
 
-  // Start with a primary width fraction
-  let primaryWidth = Math.round(containerWidth * 0.62);
+  // Primary image takes ~62% of width
+  const primaryWidth = Math.round(containerWidth * 0.62);
+  const primaryHeight = Math.round(primaryWidth * (16 / 9));
 
-  // Compute proportional sizes
-  let primaryHeight = Math.round(primaryWidth * (16 / 9));
-  let smallImageHeight = Math.round((primaryHeight - rowGap) / 2);
-  let smallImageWidth = Math.round(smallImageHeight * (9 / 16));
-  const maxIterations = 30;
-  let iterations = 0;
-
-  // Ensure two tiles fit on the right side
-  while (iterations < maxIterations) {
-    const rightWidthAvailable = containerWidth - primaryWidth - colGap;
-    const totalNeededForTwo = smallImageWidth * 2 + innerGap;
-    if (totalNeededForTwo <= rightWidthAvailable || primaryWidth <= Math.round(containerWidth * 0.4)) {
-      break;
-    }
-    primaryWidth = Math.round(primaryWidth * 0.98);
-    primaryHeight = Math.round(primaryWidth * (16 / 9));
-    smallImageHeight = Math.round((primaryHeight - rowGap) / 2);
-    smallImageWidth = Math.round(smallImageHeight * (9 / 16));
-    iterations += 1;
-  }
-
+  // Right side width
   const rightWidth = Math.max(0, containerWidth - primaryWidth - colGap);
-  const gridRowHeight = smallImageHeight;
-  const productTileWidth = smallImageWidth;
-  const productTileHeight = smallImageHeight;
+
+  // Product tile dimensions (2 rows high, portrait 9:16)
+  const productTileHeight = Math.round((primaryHeight - innerGap) / 2);
+  const productTileWidth = Math.round(productTileHeight * (9 / 16));
 
   const handleShopClick = () => onShopClick?.(outfitData);
 
@@ -94,65 +73,71 @@ export const OutfitLookCard: React.FC<OutfitLookCardProps> = ({
           </View>
         )}
 
-        {/* Right 2x2 Grid */}
-        <View style={[styles.rightColumn, { width: rightWidth }]}>
-          {/* Row 1 */}
-          <View style={[styles.gridRow, { height: gridRowHeight, marginBottom: rowGap }]}>
-            {[0, 1].map((idx) => {
-              const img = productImages[idx];
-              const uri = getImageUrl(img?.image?.src);
-              return (
-                <View
-                  key={`r1-${idx}`}
-                  style={[
-                    styles.productImageContainer,
-                    {
-                      width: productTileWidth,
-                      height: productTileHeight,
-                      marginRight: idx === 0 ? innerGap : 0,
-                    },
-                  ]}
-                >
-                  {uri && (
-                    <Image
-                      source={{ uri }}
-                      style={styles.productImage}
-                      resizeMode="cover"
-                    />
-                  )}
-                </View>
-              );
-            })}
-          </View>
+        {/* Right Scrollable Column */}
+        <View style={[styles.rightColumn, { width: rightWidth, height: primaryHeight }]}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+          >
+            {/* Row 1 */}
+            <View style={[styles.scrollRow, { height: productTileHeight, marginBottom: innerGap }]}>
+              {validStyleColors.map((item: any, idx: number) => {
+                if (idx % 2 !== 0) return null; // Only odd indices for row 1
+                const uri = getImageUrl(item?.image?.src);
+                return (
+                  <View
+                    key={`r1-${idx}`}
+                    style={[
+                      styles.productImageContainer,
+                      {
+                        width: productTileWidth,
+                        height: productTileHeight,
+                        marginRight: innerGap,
+                      },
+                    ]}
+                  >
+                    {uri && (
+                      <Image
+                        source={{ uri }}
+                        style={styles.productImage}
+                        resizeMode="cover"
+                      />
+                    )}
+                  </View>
+                );
+              })}
+            </View>
 
-          {/* Row 2 */}
-          <View style={[styles.gridRow, { height: gridRowHeight }]}>
-            {[2, 3].map((idx) => {
-              const img = productImages[idx];
-              const uri = getImageUrl(img?.image?.src);
-              return (
-                <View
-                  key={`r2-${idx}`}
-                  style={[
-                    styles.productImageContainer,
-                    {
-                      width: productTileWidth,
-                      height: productTileHeight,
-                      marginRight: idx === 2 ? innerGap : 0,
-                    },
-                  ]}
-                >
-                  {uri && (
-                    <Image
-                      source={{ uri }}
-                      style={styles.productImage}
-                      resizeMode="cover"
-                    />
-                  )}
-                </View>
-              );
-            })}
-          </View>
+            {/* Row 2 */}
+            <View style={[styles.scrollRow, { height: productTileHeight }]}>
+              {validStyleColors.map((item: any, idx: number) => {
+                if (idx % 2 === 0) return null; // Only even indices for row 2
+                const uri = getImageUrl(item?.image?.src);
+                return (
+                  <View
+                    key={`r2-${idx}`}
+                    style={[
+                      styles.productImageContainer,
+                      {
+                        width: productTileWidth,
+                        height: productTileHeight,
+                        marginRight: innerGap,
+                      },
+                    ]}
+                  >
+                    {uri && (
+                      <Image
+                        source={{ uri }}
+                        style={styles.productImage}
+                        resizeMode="cover"
+                      />
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          </ScrollView>
         </View>
       </View>
 
@@ -198,9 +183,12 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   rightColumn: {
-    justifyContent: 'center',
+    overflow: 'hidden',
   },
-  gridRow: {
+  scrollContent: {
+    flexDirection: 'column',
+  },
+  scrollRow: {
     flexDirection: 'row',
   },
   productImageContainer: {
