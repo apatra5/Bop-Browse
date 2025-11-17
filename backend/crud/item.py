@@ -2,7 +2,7 @@
 from typing import List
 
 from sqlalchemy import desc, func, text
-from models.item import Item
+from models.item import Item, ProductImages
 from models.associations import item_category, item_outfit
 
 
@@ -67,7 +67,19 @@ def get_items_count(db) -> int:
     """Get the total count of items."""
     return db.query(Item).count()
 
-def update_item(db, id: str, name: str = None, image_url_suffix: str = None, product_detail_url: str = None, embedding = None) -> Item:
+def update_item(
+        db, 
+        id: str, 
+        name: str = None, 
+        image_url_suffix: str = None, 
+        product_detail_url: str = None, 
+        designer_name: str = None,
+        price: str = None,
+        color: str = None,
+        stretch: str = None,
+        product_images_urls: List[tuple[int, str]] = None,
+        embedding = None,
+        ) -> Item:
     """Update an existing item."""
     db_item = db.query(Item).filter(Item.id == id).first()
     if db_item:
@@ -79,6 +91,19 @@ def update_item(db, id: str, name: str = None, image_url_suffix: str = None, pro
             db_item.product_detail_url = product_detail_url
         if embedding is not None:
             db_item.embedding = embedding
+        if designer_name is not None:
+            db_item.designer_name = designer_name
+        if price is not None:
+            db_item.price = price
+        if color is not None:
+            db_item.color = color
+        if stretch is not None:
+            db_item.stretch = stretch
+        if product_images_urls is not None:
+            db_item.product_images = []
+            for image_id, url in product_images_urls:
+                pi = ProductImages(item_id=id, id=image_id, image_url_suffix=url)
+                db_item.product_images.append(pi)
         db.add(db_item)
         db.commit()
         db.refresh(db_item)
@@ -242,7 +267,31 @@ def _test_similar_unseen_items():
     print(f"Top 10 similar unseen items for user ID {user_id} based on item ID {item_id}:")
     for item in similar_unseen_items:
         print(f"Item ID: {item.id}, Name: {item.name}")
+
+def _test_multiple_image_urls():
+    from db.session import SessionLocal
+    db = SessionLocal()
+
+    item = get_item_by_id(db, "1571990997")
+    print("Item:", item)
+    print("Product image URLs:")
+    for img in item.product_images:
+        print("\t", img.image_url_suffix)
     
+    product_images = [
+        ("10157196", "/prod/products/rthir/rthir21453215d2/rthir21453215d2_1701450023062_2-0.jpg"),
+        ("10157197", "/prod/products/rthir/rthir21453215d2/rthir21453215d2_1701450023041_2-0.jpg"),
+        ("10157195", "/prod/products/rthir/rthir21453215d2/rthir21453215d2_1701450023077_2-0.jpg"),
+        ("10157189", "/prod/products/rthir/rthir21453215d2/rthir21453215d2_1701450022013_2-0.jpg"),
+        ("10157198", "/prod/products/rthir/rthir21453215d2/rthir21453215d2_1701450023508_2-0.jpg"),
+        ("10157192", "/prod/products/rthir/rthir21453215d2/rthir21453215d2_1701450022229_2-0.jpg"),
+    ]
+    update_item(db, id=item.id, product_images_urls=product_images)
+
+    item = get_item_by_id(db, "1571990997")
+    print("After update, product image URLs:")
+    for img in item.product_images:
+        print("\t", img.image_url_suffix)
 
 if __name__ == "__main__":
-    _test_similar_unseen_items()
+    _test_multiple_image_urls()
