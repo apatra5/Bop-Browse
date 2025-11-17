@@ -8,7 +8,7 @@ Build a Tinder like system for matching users with Shopbop outfits that they lik
 
 To run backend locally:
 ```bash
-cd backened
+cd backend
 uvicorn main:app --reload
 ```
 API docs will be available at `http://localhost:8000/docs`
