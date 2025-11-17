@@ -77,7 +77,7 @@ def update_item(
         price: str = None,
         color: str = None,
         stretch: str = None,
-        product_images_urls: List[tuple[int, str]] = None,
+        product_images_urls: List[tuple[str, str]] = None,
         embedding = None,
         ) -> Item:
     """Update an existing item."""
