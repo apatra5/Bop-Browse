@@ -60,16 +60,23 @@ class ProductInfo:
 
     @classmethod
     def from_product_dict(cls, product: Dict):
+        first_in_stock_color = None
+        for color in product.get("colors", []):
+            if color.get("inStock", False):
+                first_in_stock_color = color
+                break
+        if not first_in_stock_color:
+            return None
         return cls(
             product_sin=product["productSin"],
             short_description=product["shortDescription"],
-            image_url_suffix=product["colors"][0]["images"][0]["src"],
+            image_url_suffix=first_in_stock_color["images"][0]["src"],
             product_detail_url=product["productDetailUrl"],
             designer_name=product["designerName"],
             price=product["retailPrice"]["price"],
-            color=product["colors"][0]["name"],
+            color=first_in_stock_color["name"],
             stretch=product.get("displayStretchAmount", None),
-            product_images=[img["src"] for img in product["colors"][0]["images"]]
+            product_images=[img["src"] for img in first_in_stock_color["images"]]
         )
 
     @classmethod
@@ -228,6 +235,7 @@ class SyncItems:
             for db_item in items:
                 product_info = ProductInfo.from_product_sin(db_item.id, self.api_client)
                 if product_info:
+                    current_db_index += 1
                     if product_info.inStock is False:
                         continue
                     crud_item.update_item(self.db, 
@@ -242,7 +250,6 @@ class SyncItems:
                         product_images_urls=product_info.product_images
                     )
                     logging.info(f"Updated item :{current_db_index} {db_item.id} - {product_info.short_description}")
-                    current_db_index += 1
             logging.info(f"Finished updating items from {start} to {start + batch_size}.")
     
 
@@ -283,4 +290,4 @@ class SyncItems:
 
 if __name__ == "__main__":
     syncer = SyncItems()
-    syncer.update_existing_items(offset=200, batch_size=100)
+    syncer.update_existing_items(offset=2228, batch_size=100)
