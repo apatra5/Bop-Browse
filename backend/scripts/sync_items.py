@@ -219,7 +219,7 @@ class SyncItems:
         total_items = crud_item.get_items_count(self.db)
         current_count = 0
         for start in range(offset, total_items, batch_size):
-            items = crud_item.get_all_items(self.db, offset==start, limit=batch_size)
+            items = crud_item.get_all_items(self.db, offset=start, limit=batch_size)
             for db_item in items:
                 product_info = ProductInfo.from_product_sin(db_item.id, self.api_client)
                 sleep(0.5)  # To avoid rate limiting
