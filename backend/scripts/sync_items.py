@@ -44,7 +44,8 @@ class ProductInfo:
             price: str = None,
             color: str = None,
             stretch: str = None,
-            product_images: List[str] = []
+            product_images: List[str] = [],
+            inStock: bool = True
             ):
         self.product_sin = product_sin
         self.short_description = short_description
@@ -55,6 +56,7 @@ class ProductInfo:
         self.color = color
         self.stretch = stretch
         self.product_images = product_images
+        self.inStock = inStock
 
     @classmethod
     def from_product_dict(cls, product: Dict):
@@ -74,6 +76,9 @@ class ProductInfo:
     def from_product_sin(cls, product_sin: str, api_client: ShopbopAPIClient):
         productresponse = api_client.get_product_by_product_sin(productSin=product_sin)
         product = productresponse.get("products", [])[0]
+        print(product.get("inStock"))
+        if product.get("inStock") is False:
+            return cls(inStock=False, product_sin=product_sin, short_description=product.get("shortDescription", ""))
         if not product:
             return None
         return cls.from_product_dict(product)
@@ -222,8 +227,9 @@ class SyncItems:
             items = crud_item.get_all_items(self.db, offset=start, limit=batch_size)
             for db_item in items:
                 product_info = ProductInfo.from_product_sin(db_item.id, self.api_client)
-                sleep(0.5)  # To avoid rate limiting
                 if product_info:
+                    if product_info.inStock is False:
+                        continue
                     crud_item.update_item(self.db, 
                         id=db_item.id, 
                         name=product_info.short_description, 
@@ -277,4 +283,4 @@ class SyncItems:
 
 if __name__ == "__main__":
     syncer = SyncItems()
-    syncer.update_existing_items(offset=0, batch_size=100)
+    syncer.update_existing_items(offset=200, batch_size=100)
