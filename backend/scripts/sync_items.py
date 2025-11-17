@@ -222,7 +222,7 @@ class SyncItems:
 
     def update_existing_items(self, offset: int = 0, batch_size: int = 100):
         total_items = crud_item.get_items_count(self.db)
-        current_count = 0
+        current_db_index = offset
         for start in range(offset, total_items, batch_size):
             items = crud_item.get_all_items(self.db, offset=start, limit=batch_size)
             for db_item in items:
@@ -241,8 +241,8 @@ class SyncItems:
                         stretch=product_info.stretch,
                         product_images_urls=product_info.product_images
                     )
-                    logging.info(f"Updated item :{current_count} {db_item.id} - {product_info.short_description}")
-                    current_count += 1
+                    logging.info(f"Updated item :{current_db_index} {db_item.id} - {product_info.short_description}")
+                    current_db_index += 1
             logging.info(f"Finished updating items from {start} to {start + batch_size}.")
     
 
