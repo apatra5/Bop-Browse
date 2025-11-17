@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String
+from sqlalchemy import Column, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 from pgvector.sqlalchemy import Vector
 
@@ -11,6 +11,14 @@ class Item(Base):
     name = Column(String)
     image_url_suffix = Column(String, nullable=True)
     product_detail_url = Column(String, nullable=True)
+    designer_name = Column(String, nullable=True)
+    price = Column(String, nullable=True)
+    color = Column(String, nullable=True)
+    stretch = Column(String, nullable=True)
+
+    product_images = relationship("ProductImages", back_populates="item")
+
+
     embedding = Column(Vector(768), nullable=True)
 
     categories = relationship("Category", secondary=item_category, back_populates="items")
@@ -22,3 +30,11 @@ class Item(Base):
 
     def __repr__(self):
         return f"<Item(id={self.id}, name={self.name})>"
+
+class ProductImages(Base):
+    __tablename__ = "product_images"
+    id = Column(Integer, primary_key=True, index=True)
+    item_id = Column(String, ForeignKey(Item.id, ondelete="CASCADE"))
+    image_url_suffix = Column(String)
+
+    item = relationship("Item", back_populates="product_images")
