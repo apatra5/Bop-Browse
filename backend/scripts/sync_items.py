@@ -60,23 +60,32 @@ class ProductInfo:
 
     @classmethod
     def from_product_dict(cls, product: Dict):
-        first_in_stock_color = None
-        for color in product.get("colors", []):
-            if color.get("inStock", False):
-                first_in_stock_color = color
+        default_color_sin = product.get("defaultColorSin")
+        colors = product.get("colors", [])
+        default_color = None
+        for color in colors:
+            if color.get("colorSin") == default_color_sin:
+                default_color = color
                 break
-        if not first_in_stock_color:
+        if not default_color:
+            for color in colors:
+                if color.get("inStock") is True:
+                    default_color = color
+                    break
+        if not default_color and colors[0]["images"]:
+            default_color = colors[0]
+        if not default_color:
             return None
         return cls(
             product_sin=product["productSin"],
             short_description=product["shortDescription"],
-            image_url_suffix=first_in_stock_color["images"][0]["src"],
+            image_url_suffix=default_color["images"][0]["src"],
             product_detail_url=product["productDetailUrl"],
             designer_name=product["designerName"],
             price=product["retailPrice"]["price"],
-            color=first_in_stock_color["name"],
+            color=default_color["name"],
             stretch=product.get("displayStretchAmount", None),
-            product_images=[img["src"] for img in first_in_stock_color["images"]]
+            product_images=[img["src"] for img in default_color["images"]]
         )
 
     @classmethod
