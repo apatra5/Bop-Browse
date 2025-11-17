@@ -285,7 +285,7 @@ export default function ClosetScreen() {
 
       {selectedItem && (
         <ProductDetailModal
-          item={selectedItem}
+          itemId={selectedItem.id}
           visible={modalVisible}
           onClose={handleCloseModal}
         />
