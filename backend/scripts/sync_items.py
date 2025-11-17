@@ -44,8 +44,7 @@ class ProductInfo:
             price: str = None,
             color: str = None,
             stretch: str = None,
-            product_images: List[str] = [],
-            inStock: bool = True
+            product_images: List[str] = []
             ):
         self.product_sin = product_sin
         self.short_description = short_description
@@ -56,7 +55,6 @@ class ProductInfo:
         self.color = color
         self.stretch = stretch
         self.product_images = product_images
-        self.inStock = inStock
 
     @classmethod
     def from_product_dict(cls, product: Dict):
@@ -74,7 +72,7 @@ class ProductInfo:
                     break
         if not default_color and colors[0]["images"]:
             default_color = colors[0]
-        if not default_color:
+        if not default_color or default_color.get("images") is None or len(default_color.get("images")) == 0:
             return None
         return cls(
             product_sin=product["productSin"],
@@ -92,9 +90,6 @@ class ProductInfo:
     def from_product_sin(cls, product_sin: str, api_client: ShopbopAPIClient):
         productresponse = api_client.get_product_by_product_sin(productSin=product_sin)
         product = productresponse.get("products", [])[0]
-        print(product.get("inStock"))
-        if product.get("inStock") is False:
-            return cls(inStock=False, product_sin=product_sin, short_description=product.get("shortDescription", ""))
         if not product:
             return None
         return cls.from_product_dict(product)
@@ -245,8 +240,6 @@ class SyncItems:
                 product_info = ProductInfo.from_product_sin(db_item.id, self.api_client)
                 if product_info:
                     current_db_index += 1
-                    if product_info.inStock is False:
-                        continue
                     crud_item.update_item(self.db, 
                         id=db_item.id, 
                         name=product_info.short_description, 
@@ -299,4 +292,4 @@ class SyncItems:
 
 if __name__ == "__main__":
     syncer = SyncItems()
-    syncer.update_existing_items(offset=2228, batch_size=100)
+    syncer.update_existing_items(offset=11193, batch_size=100)
