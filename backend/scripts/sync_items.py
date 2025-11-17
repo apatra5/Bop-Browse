@@ -44,8 +44,7 @@ class ProductInfo:
             price: str = None,
             color: str = None,
             stretch: str = None,
-            product_images: List[str] = [],
-            inStock: bool = True
+            product_images: List[str] = []
             ):
         self.product_sin = product_sin
         self.short_description = short_description
@@ -56,7 +55,6 @@ class ProductInfo:
         self.color = color
         self.stretch = stretch
         self.product_images = product_images
-        self.inStock = inStock
 
     @classmethod
     def from_product_dict(cls, product: Dict):
@@ -95,9 +93,6 @@ class ProductInfo:
     def from_product_sin(cls, product_sin: str, api_client: ShopbopAPIClient):
         productresponse = api_client.get_product_by_product_sin(productSin=product_sin)
         product = productresponse.get("products", [])[0]
-        print(product.get("inStock"))
-        if product.get("inStock") is False:
-            return cls(inStock=False, product_sin=product_sin, short_description=product.get("shortDescription", ""))
         if not product:
             return None
         return cls.from_product_dict(product)
