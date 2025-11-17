@@ -7,6 +7,7 @@ from routers import items as items_router
 from routers import likes as likes_router
 from routers import outfit as outfit_router
 from routers import dislikes as dislikes_router
+from routers import preferences as preferences_router
 
 app = FastAPI(title="Bop-Browse Backend")
 
@@ -25,6 +26,7 @@ app.include_router(items_router.router)
 app.include_router(likes_router.router)
 app.include_router(outfit_router.router)
 app.include_router(dislikes_router.router)
+app.include_router(preferences_router.router)
 
 
 @app.get("/", tags=["root"])
