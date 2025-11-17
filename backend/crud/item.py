@@ -77,7 +77,7 @@ def update_item(
         price: str = None,
         color: str = None,
         stretch: str = None,
-        product_images_urls: List[tuple[str, str]] = None,
+        product_images_urls: List[str] = None,
         embedding = None,
         ) -> Item:
     """Update an existing item."""
@@ -101,8 +101,8 @@ def update_item(
             db_item.stretch = stretch
         if product_images_urls is not None:
             db_item.product_images = []
-            for image_id, url in product_images_urls:
-                pi = ProductImages(item_id=id, id=image_id, image_url_suffix=url)
+            for url in product_images_urls:
+                pi = ProductImages(item_id=id, image_url_suffix=url)
                 db_item.product_images.append(pi)
         db.add(db_item)
         db.commit()

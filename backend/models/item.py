@@ -33,7 +33,7 @@ class Item(Base):
 
 class ProductImages(Base):
     __tablename__ = "product_images"
-    id = Column(String, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, index=True)
     item_id = Column(String, ForeignKey(Item.id, ondelete="CASCADE"))
     image_url_suffix = Column(String)
 

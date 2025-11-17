@@ -43,6 +43,11 @@ class ShopbopAPIClient:
         response = self._client.get(f"/public/products/{productSin}/outfits")
         response.raise_for_status()
         return response.json()
+
+    def get_product_by_product_sin(self, productSin: str):
+        response = self._client.get(f"/public/products/{productSin}")
+        response.raise_for_status()
+        return response.json()
     
     def close(self):
         self._client.close()

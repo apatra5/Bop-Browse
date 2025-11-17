@@ -1,3 +1,4 @@
+from asyncio import sleep
 from sqlalchemy.orm import Session
 import logging
 from typing import List, Dict
@@ -34,11 +35,51 @@ class LeafCategoryInfo(CategoryInfo):
     
 class ProductInfo:
     # Info: ProductSin (str), ShortDescription (str)
-    def __init__(self, product_sin: str, short_description: str, image_url_suffix: str = None, product_detail_url: str = None):
+    def __init__(self, 
+            product_sin: str, 
+            short_description: str, 
+            image_url_suffix: str = None, 
+            product_detail_url: str = None,
+            designer_name: str = None,
+            price: str = None,
+            color: str = None,
+            stretch: str = None,
+            product_images: List[str] = []
+            ):
         self.product_sin = product_sin
         self.short_description = short_description
         self.image_url_suffix = image_url_suffix
         self.product_detail_url = product_detail_url
+        self.designer_name = designer_name
+        self.price = price
+        self.color = color
+        self.stretch = stretch
+        self.product_images = product_images
+
+    @classmethod
+    def from_product_dict(cls, product: Dict):
+        return cls(
+            product_sin=product["productSin"],
+            short_description=product["shortDescription"],
+            image_url_suffix=product["colors"][0]["images"][0]["src"],
+            product_detail_url=product["productDetailUrl"],
+            designer_name=product["designerName"],
+            price=product["retailPrice"]["price"],
+            color=product["colors"][0]["name"],
+            stretch=product.get("displayStretchAmount", None),
+            product_images=[img["src"] for img in product["colors"][0]["images"]]
+        )
+
+    @classmethod
+    def from_product_sin(cls, product_sin: str, api_client: ShopbopAPIClient):
+        productresponse = api_client.get_product_by_product_sin(productSin=product_sin)
+        product = productresponse.get("products", [])[0]
+        if not product:
+            return None
+        return cls.from_product_dict(product)
+    
+    def detailed_str(self):
+        return f"ProductInfo(product_sin={self.product_sin}, short_description={self.short_description}, image_url_suffix={self.image_url_suffix}, product_detail_url={self.product_detail_url}, designer_name={self.designer_name}, price={self.price}, color={self.color}, stretch={self.stretch}, product_images={self.product_images})"
 
     def __str__(self):
         return f"ProductInfo(product_sin={self.product_sin}, short_description={self.short_description})"
@@ -98,9 +139,8 @@ class SyncItems:
                 break
 
             for product in products:
-                item = ProductInfo(product_sin=product["product"].get("productSin"), short_description=product["product"].get("shortDescription"), image_url_suffix=product["product"]["colors"][0]["images"][0]["src"], product_detail_url=product["product"].get("productDetailUrl"))
+                item = ProductInfo(product["product"])
                 self._add_or_update_item(item, category_path=category.path)
-
 
     def _add_or_update_item(self, item: ProductInfo, category_path: List[CategoryInfo]):
         # Check if the item has any outfit associated with it
@@ -121,12 +161,32 @@ class SyncItems:
         db_item = crud_item.get_item_by_id(self.db, id=item.product_sin)
         if not db_item:
             self.added_items += 1
-            db_item = crud_item.create_item(self.db, id=item.product_sin, name=item.short_description, image_url_suffix=item.image_url_suffix, product_detail_url=item.product_detail_url)
+            db_item = crud_item.create_item(self.db, 
+                    id=item.product_sin, 
+                    name=item.short_description, 
+                    image_url_suffix=item.image_url_suffix, 
+                    product_detail_url=item.product_detail_url,
+                    designer_name=item.designer_name,
+                    price=item.price,
+                    color=item.color,
+                    stretch=item.stretch,
+                    product_images_urls=item.product_images
+            )
         
         else: 
             # update existing item
             self.updated_existing_items += 1
-            db_item = crud_item.update_item(self.db, id=item.product_sin, name=item.short_description, image_url_suffix=item.image_url_suffix, product_detail_url=item.product_detail_url)
+            db_item = crud_item.update_item(self.db, 
+                    id=item.product_sin, 
+                    name=item.short_description, 
+                    image_url_suffix=item.image_url_suffix, 
+                    product_detail_url=item.product_detail_url, 
+                    designer_name=item.designer_name, 
+                    price=item.price, 
+                    color=item.color, 
+                    stretch=item.stretch, 
+                    product_images_urls=item.product_images
+            )
 
         # Update category associations
         for category in category_path:
@@ -155,7 +215,30 @@ class SyncItems:
                     self.db.commit()
         
 
-
+    def update_existing_items(self, offset: int = 0, batch_size: int = 100):
+        total_items = crud_item.get_items_count(self.db)
+        current_count = 0
+        for start in range(offset, total_items, batch_size):
+            items = crud_item.get_all_items(self.db, offset==start, limit=batch_size)
+            for db_item in items:
+                product_info = ProductInfo.from_product_sin(db_item.id, self.api_client)
+                sleep(0.5)  # To avoid rate limiting
+                if product_info:
+                    crud_item.update_item(self.db, 
+                        id=db_item.id, 
+                        name=product_info.short_description, 
+                        image_url_suffix=product_info.image_url_suffix, 
+                        product_detail_url=product_info.product_detail_url,
+                        designer_name=product_info.designer_name,
+                        price=product_info.price,
+                        color=product_info.color,
+                        stretch=product_info.stretch,
+                        product_images_urls=product_info.product_images
+                    )
+                    logging.info(f"Updated item :{current_count} {db_item.id} - {product_info.short_description}")
+                    current_count += 1
+            logging.info(f"Finished updating items from {start} to {start + batch_size}.")
+    
 
     def sync(self):
         # Get a list of leaf categories
@@ -194,4 +277,4 @@ class SyncItems:
 
 if __name__ == "__main__":
     syncer = SyncItems()
-    syncer.sync()
+    syncer.update_existing_items(offset=0, batch_size=100)
