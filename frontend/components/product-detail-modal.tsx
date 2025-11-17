@@ -18,13 +18,12 @@ import Animated, {
 } from "react-native-reanimated";
 import { IconSymbol } from "./ui/icon-symbol";
 import { ThemedText } from "./themed-text";
-import { Item } from "@/data/mock-items";
 import { OutfitLookCard } from "./outfit-look-card"; // Import the new component
 
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 
 interface ProductDetailModalProps {
-  item: Item;
+  itemId: string;
   visible: boolean;
   onClose: () => void;
 }
@@ -34,7 +33,7 @@ interface OutfitData {
 }
 
 export function ProductDetailModal({
-  item,
+  itemId,
   visible,
   onClose,
 }: ProductDetailModalProps) {
@@ -49,17 +48,17 @@ export function ProductDetailModal({
     if (visible && !outfitData) {
       fetchOutfitData();
     }
-  }, [visible, item.id]);
+  }, [visible, itemId]);
 
   const fetchOutfitData = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      console.log(`Fetching outfit data for item: ${item.id}`);
+  console.log(`Fetching outfit data for item: ${itemId}`);
       
       const response = await fetch(
-        `https://api.shopbop.com/public/products/${item.id}/outfits?lang=en-US`,
+  `https://api.shopbop.com/public/products/${itemId}/outfits?lang=en-US`,
         {
           headers: {
             'accept': 'application/json',
