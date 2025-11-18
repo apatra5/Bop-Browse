@@ -5,9 +5,11 @@ import { Stack, useRouter } from 'expo-router';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import api from '../../api/axios';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function SignUpScreen() {
   const router = useRouter();
+  const { signIn } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
@@ -57,6 +59,11 @@ export default function SignUpScreen() {
     try {
       const resp = await api.post('/users/', { username, password });
       if (resp.status === 201) {
+        // Persist auth session immediately after successful sign up
+        const created = resp.data;
+        if (created?.id && created?.username) {
+          signIn(String(created.id), created.username);
+        }
         router.push('./signup_success');
       } else if (resp.status === 400) {
         setError(resp.data?.detail || 'Bad request');
