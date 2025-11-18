@@ -61,29 +61,32 @@ class ProductInfo:
         default_color_sin = product.get("defaultColorSin")
         colors = product.get("colors", [])
         default_color = None
-        for color in colors:
-            if color.get("colorSin") == default_color_sin:
-                default_color = color
-                break
-        if not default_color:
+        if not colors or len(colors) == 0:
+            default_color = None
+        else:
             for color in colors:
-                if color.get("inStock") is True:
+                if color.get("colorSin") == default_color_sin:
                     default_color = color
                     break
-        if not default_color and colors[0]["images"]:
-            default_color = colors[0]
-        if not default_color or default_color.get("images") is None or len(default_color.get("images")) == 0:
-            return None
+            if not default_color:
+                for color in colors:
+                    if color.get("inStock") is True:
+                        default_color = color
+                        break
+            if not default_color and colors[0]["images"]:
+                default_color = colors[0]
+            if not default_color or default_color.get("images") is None or len(default_color.get("images")) == 0:
+                default_color = None
         return cls(
             product_sin=product["productSin"],
             short_description=product["shortDescription"],
-            image_url_suffix=default_color["images"][0]["src"],
+            image_url_suffix=default_color["images"][0]["src"] if default_color and default_color.get("images") and len(default_color.get("images")) > 0 else None,
             product_detail_url=product["productDetailUrl"],
             designer_name=product["designerName"],
             price=product["retailPrice"]["price"],
-            color=default_color["name"],
+            color=default_color["name"] if default_color else None,
             stretch=product.get("displayStretchAmount", None),
-            product_images=[img["src"] for img in default_color["images"]]
+            product_images=[img["src"] for img in default_color["images"]] if default_color and default_color.get("images") else []
         )
 
     @classmethod
@@ -231,12 +234,15 @@ class SyncItems:
                     self.db.commit()
         
 
-    def update_existing_items(self, offset: int = 0, batch_size: int = 100):
+    def update_existing_items(self, offset: int = 0, batch_size: int = 100, skip_designer_name_filled: bool = True):
         total_items = crud_item.get_items_count(self.db)
         current_db_index = offset
         for start in range(offset, total_items, batch_size):
             items = crud_item.get_all_items(self.db, offset=start, limit=batch_size)
             for db_item in items:
+                if skip_designer_name_filled and db_item.designer_name is not None:
+                    current_db_index += 1
+                    continue
                 product_info = ProductInfo.from_product_sin(db_item.id, self.api_client)
                 if product_info:
                     current_db_index += 1
@@ -292,4 +298,4 @@ class SyncItems:
 
 if __name__ == "__main__":
     syncer = SyncItems()
-    syncer.update_existing_items(offset=11193, batch_size=100)
+    syncer.update_existing_items(offset=0, batch_size=100, skip_designer_name_filled=True)
