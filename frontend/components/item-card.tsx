@@ -191,7 +191,7 @@ export function ItemCard({
 
       {/* Product Detail Modal */}
       <ProductDetailModal
-        item={item}
+        itemId={item.id}
         visible={showDetails}
         onClose={handleCloseDetails}
       />
