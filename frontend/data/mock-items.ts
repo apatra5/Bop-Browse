@@ -1,9 +1,17 @@
 export interface Item {
   id: string;
   name: string;
-  brand_code: string;
-  brand_name: string;
-  image_url: string;
+  // Legacy fields still referenced in components
+  brand_code?: string;
+  brand_name?: string; // Will mirror designer_name when present
+  image_url: string; // Fully qualified URL for primary image
+  image_url_suffix?: string; // Raw suffix path returned by API
+  product_detail_url?: string;
+  designer_name?: string;
+  price?: string; // e.g. "$548.00"
+  color?: string;
+  stretch?: string | null; // e.g. "Non-Stretch" or null
+  product_images?: string[]; // Array of raw suffix paths
   categories: Array<{
     id: string;
     name: string;

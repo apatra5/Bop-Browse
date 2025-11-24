@@ -77,21 +77,21 @@ export default function UserScreen() {
 
 			<View style={styles.statsRow}>
 				<View style={styles.statCard}>
-					<ThemedText style={styles.statLabel}>Likes</ThemedText>
+					<ThemedText style={styles.statLabel}>Liked Items</ThemedText>
 					{loading ? (
 						<ActivityIndicator />
 					) : (
 						<ThemedText type="title" style={styles.statValue}>{likesCount ?? 0}</ThemedText>
 					)}
 				</View>
-				<View style={styles.statCard}>
+				{/* <View style={styles.statCard}>
 					<ThemedText style={styles.statLabel}>Dislikes</ThemedText>
 					{loading ? (
 						<ActivityIndicator />
 					) : (
 						<ThemedText type="title" style={styles.statValue}>{dislikesCount ?? 0}</ThemedText>
 					)}
-				</View>
+				</View> */}
 			</View>
 
 			{error ? (

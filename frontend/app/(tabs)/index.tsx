@@ -29,14 +29,31 @@ export default function SwipeScreen() {
         user_id: userId,
         category_ids: [], // TODO
       });
-      const fetchedItems = response.data.map((item: any) => ({
-        id: item.id,
-        name: item.name,
-        brand_code: "",
-        brand_name: "",
-        image_url: `https://m.media-amazon.com/images/G/01/Shopbop/p${item.image_url_suffix}`,
-        categories: [],
-      }));
+      const fetchedItems = response.data.map((item: any) => {
+        const imageSuffix = item.image_url_suffix;
+        const fullImageUrl = imageSuffix
+          ? `https://m.media-amazon.com/images/G/01/Shopbop/p${imageSuffix}`
+          : "";
+        return {
+          id: String(item.id),
+          name: item.name,
+            // Map new schema fields
+          image_url: fullImageUrl,
+          image_url_suffix: imageSuffix,
+          product_detail_url: item.product_detail_url,
+          designer_name: item.designer_name,
+          brand_name: item.designer_name, // for existing components
+          price: item.price,
+          color: item.color,
+          stretch: item.stretch ?? null,
+          product_images: Array.isArray(item.product_images)
+            ? item.product_images
+            : [],
+          // Legacy / placeholder fields
+          brand_code: "",
+          categories: Array.isArray(item.categories) ? item.categories : [],
+        };
+      });
 
       console.log("[fetchItems] fetchedItems length:", fetchedItems.length);
 
@@ -55,14 +72,29 @@ export default function SwipeScreen() {
     try {
       setIsFetchingMore(true);
       const response = await api.get("/items/feed");
-      const fetchedItems = response.data.map((item: any) => ({
-        id: item.id,
-        name: item.name,
-        brand_code: "",
-        brand_name: "",
-        image_url: `https://m.media-amazon.com/images/G/01/Shopbop/p${item.image_url_suffix}`,
-        categories: [],
-      }));
+      const fetchedItems = response.data.map((item: any) => {
+        const imageSuffix = item.image_url_suffix;
+        const fullImageUrl = imageSuffix
+          ? `https://m.media-amazon.com/images/G/01/Shopbop/p${imageSuffix}`
+          : "";
+        return {
+          id: String(item.id),
+          name: item.name,
+          image_url: fullImageUrl,
+          image_url_suffix: imageSuffix,
+          product_detail_url: item.product_detail_url,
+          designer_name: item.designer_name,
+          brand_name: item.designer_name,
+          price: item.price,
+          color: item.color,
+          stretch: item.stretch ?? null,
+          product_images: Array.isArray(item.product_images)
+            ? item.product_images
+            : [],
+          brand_code: "",
+          categories: Array.isArray(item.categories) ? item.categories : [],
+        };
+      });
 
       console.log("[fetchMoreItems] fetchedItems length:", fetchedItems.length);
 

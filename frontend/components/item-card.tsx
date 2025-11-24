@@ -1,7 +1,7 @@
 // frontend/components/item-card.tsx
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { StyleSheet, View, Dimensions, TouchableOpacity } from "react-native";
+import { StyleSheet, View, Dimensions, TouchableOpacity, ScrollView } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -14,7 +14,7 @@ import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { ThemedText } from "./themed-text";
 import { Item } from "@/data/mock-items";
 import { IconSymbol } from "./ui/icon-symbol";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ProductDetailModal } from "./product-detail-modal";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -112,11 +112,7 @@ export function ItemCard({
   if (!isTop) {
     return (
       <View style={[styles.card, styles.cardBelow]}>
-        <Image
-          source={{ uri: item.image_url }}
-          style={styles.image}
-          contentFit="cover"
-        />
+        <Image source={{ uri: item.image_url }} style={styles.image} contentFit="cover" />
       </View>
     );
   }
@@ -125,12 +121,8 @@ export function ItemCard({
     <>
       <GestureDetector gesture={panGesture}>
         <Animated.View style={[styles.card, animatedStyle]}>
-          <Image
-            source={{ uri: item.image_url }}
-            style={styles.image}
-            contentFit="cover"
-            transition={300}
-          />
+          {/* Image Carousel */}
+          <CarouselImages item={item} />
 
           {/* Green overlay for LIKE */}
           <Animated.View
@@ -175,6 +167,11 @@ export function ItemCard({
               <ThemedText type="defaultSemiBold" style={styles.brandName}>
                 {item.brand_name}
               </ThemedText>
+              {item.price && (
+                <ThemedText style={styles.price}>
+                  {item.price}
+                </ThemedText>
+              )}
               <View style={styles.categoriesContainer}>
                 {item.categories.map((category) => (
                   <View key={category.id} style={styles.categoryTag}>
@@ -196,6 +193,98 @@ export function ItemCard({
         onClose={handleCloseDetails}
       />
     </>
+  );
+}
+
+// Lightweight carousel component (infinite loop style) using product_images suffixes
+function CarouselImages({ item }: { item: Item }) {
+  const PREFIX = "https://m.media-amazon.com/images/G/01/Shopbop/p";
+  const scrollRef = useRef<ScrollView | null>(null);
+  const [pageWidth, setPageWidth] = useState(CARD_WIDTH);
+  const [logicalIndex, setLogicalIndex] = useState(0);
+  const virtualIndexRef = useRef(1); // starts at first real image
+  const images: string[] = (item.product_images && item.product_images.length
+    ? item.product_images
+    : item.image_url_suffix
+      ? [item.image_url_suffix]
+      : [""]
+  ).map((s) => (s.startsWith("http") ? s : `${PREFIX}${s}`));
+
+  // Build virtual array [last, ...images, first]
+  const virtImages = [images[images.length - 1], ...images, images[0]];
+  const AUTOPLAY_MS = 4000;
+  const JUMP_DELAY_MS = 350;
+  // Use number for React Native timers
+  const intervalRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    // Initialize position
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({ x: pageWidth * 1, animated: false });
+      virtualIndexRef.current = 1;
+      setLogicalIndex(0);
+    }
+  }, [pageWidth, images.length]);
+
+  useEffect(() => {
+  if (intervalRef.current) clearInterval(intervalRef.current);
+  intervalRef.current = setInterval(() => {
+      // advance virtual index
+      let nextVirtual = virtualIndexRef.current + 1;
+      if (scrollRef.current) {
+        scrollRef.current.scrollTo({ x: pageWidth * nextVirtual, animated: true });
+      }
+      virtualIndexRef.current = nextVirtual;
+      if (nextVirtual === virtImages.length - 1) {
+        // wrapped to cloned first; jump back
+        setTimeout(() => {
+          if (scrollRef.current) {
+            scrollRef.current.scrollTo({ x: pageWidth * 1, animated: false });
+            virtualIndexRef.current = 1;
+            setLogicalIndex(0);
+          }
+        }, JUMP_DELAY_MS);
+      } else {
+        const logical = (nextVirtual - 1 + images.length) % images.length;
+        setLogicalIndex(logical);
+      }
+    }, AUTOPLAY_MS);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    };
+  }, [images.length, pageWidth, virtImages.length]);
+
+  return (
+    <View style={styles.carouselContainer} onLayout={(e) => setPageWidth(e.nativeEvent.layout.width)}>
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        scrollEnabled={false} // autoplay only to avoid gesture conflict with swipe deck
+        contentContainerStyle={{ alignItems: "center" }}
+      >
+        {virtImages.map((src, i) => (
+          <View key={i} style={{ width: pageWidth, height: CARD_HEIGHT }}>
+            <Image
+              source={{ uri: src || item.image_url }}
+              style={styles.image}
+              contentFit="cover"
+            />
+          </View>
+        ))}
+      </ScrollView>
+      {/* Simple dots */}
+      <View style={styles.carouselDots}>
+        {images.map((_, i) => (
+          <View
+            key={i}
+            style={[styles.carouselDot, i === logicalIndex && styles.carouselDotActive]}
+          />
+        ))}
+      </View>
+    </View>
   );
 }
 
@@ -252,7 +341,7 @@ const styles = StyleSheet.create({
     height: "40%",
     justifyContent: "flex-end",
     padding: 20,
-    paddingBottom: 80, // Make room for the details button
+    paddingBottom: 30, // Make room for the details button
     zIndex: 3,
   },
   infoContainer: {
@@ -283,5 +372,38 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: "white",
     fontWeight: "500",
+  },
+  price: {
+    fontSize: 14,
+    color: "rgba(255,255,255,0.95)",
+    fontWeight: "600",
+  },
+  carouselContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  carouselDots: {
+    position: "absolute",
+    bottom: 20, // lift slightly for better separation from gradient
+    width: "100%",
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 6,
+    zIndex: 6, // above gradient (zIndex 3) and overlays
+  },
+  carouselDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "rgba(255,255,255,0.4)",
+  },
+  carouselDotActive: {
+    backgroundColor: "#d49595",
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
 });
