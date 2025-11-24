@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import api from "@/api/axios";
 import { useAuth } from "@/contexts/AuthContext";
+import { FilterDropdown } from "@/components/filter-dropdown";
 
 export default function SwipeScreen() {
   const { userId } = useAuth();
@@ -21,67 +22,66 @@ export default function SwipeScreen() {
   const [loading, setLoading] = useState(true);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
 
-  // Fetch items from backend
+  // --- Filter categories ---
+  const categories = [
+    "Dresses",
+    "Tops",
+    "Matching Sets",
+    "Swimsuits & Cover-Ups",
+    "Sweaters & Knits",
+    "Jeans",
+    "Pants",
+    "Jackets & Coats",
+    "Skirts",
+    "Activewear",
+    "Wide Leg & Flare",
+  ];
+
+  const CATEGORY_MAP: Record<string, string[]> = {
+    Dresses: ["13351"],
+    Tops: ["13332"],
+    "Matching Sets": ["13346"],
+    "Swimsuits & Cover-Ups": ["13311"],
+    "Sweaters & Knits": ["13317"],
+    Jeans: ["13377"],
+    Pants: ["13281"],
+    "Jackets & Coats": ["13414"],
+    Skirts: ["13302"],
+    Activewear: ["74367"],
+    "Wide Leg & Flare": ["13283"],
+  };
+
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [pendingSelection, setPendingSelection] = useState<string[]>([]);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  // ------------------------ FETCH ITEMS ------------------------
   const fetchItems = async () => {
     try {
       setLoading(true);
+
+      const categoryIds = selectedCategories.flatMap(
+        (cat) => CATEGORY_MAP[cat] || []
+      );
+
+      console.log("Fetching items for:", selectedCategories, categoryIds);
+
       const response = await api.post("/items/personalized-feed", {
         user_id: userId,
-        category_ids: [], // TODO
-      });
-      const fetchedItems = response.data.map((item: any) => {
-        const imageSuffix = item.image_url_suffix;
-        const fullImageUrl = imageSuffix
-          ? `https://m.media-amazon.com/images/G/01/Shopbop/p${imageSuffix}`
-          : "";
-        return {
-          id: String(item.id),
-          name: item.name,
-            // Map new schema fields
-          image_url: fullImageUrl,
-          image_url_suffix: imageSuffix,
-          product_detail_url: item.product_detail_url,
-          designer_name: item.designer_name,
-          brand_name: item.designer_name, // for existing components
-          price: item.price,
-          color: item.color,
-          stretch: item.stretch ?? null,
-          product_images: Array.isArray(item.product_images)
-            ? item.product_images
-            : [],
-          // Legacy / placeholder fields
-          brand_code: "",
-          categories: Array.isArray(item.categories) ? item.categories : [],
-        };
+        category_ids: categoryIds,
       });
 
-      console.log("[fetchItems] fetchedItems length:", fetchedItems.length);
-
-      setItems(fetchedItems);
-    } catch (error) {
-      console.error("Error fetching items:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Fetch more items and clean up old ones
-  const fetchMoreItems = async () => {
-    if (isFetchingMore) return;
-
-    try {
-      setIsFetchingMore(true);
-      const response = await api.get("/items/feed");
       const fetchedItems = response.data.map((item: any) => {
-        const imageSuffix = item.image_url_suffix;
-        const fullImageUrl = imageSuffix
-          ? `https://m.media-amazon.com/images/G/01/Shopbop/p${imageSuffix}`
+        const suffix = item.image_url_suffix;
+        const fullImageUrl = suffix
+          ? `https://m.media-amazon.com/images/G/01/Shopbop/p${suffix}`
           : "";
+
         return {
           id: String(item.id),
           name: item.name,
           image_url: fullImageUrl,
-          image_url_suffix: imageSuffix,
+          image_url_suffix: suffix,
           product_detail_url: item.product_detail_url,
           designer_name: item.designer_name,
           brand_name: item.designer_name,
@@ -96,42 +96,55 @@ export default function SwipeScreen() {
         };
       });
 
-      console.log("[fetchMoreItems] fetchedItems length:", fetchedItems.length);
-
-      setItems((prevItems) => {
-        const itemsToKeep = prevItems.slice(currentIndex);
-        const newList = [...itemsToKeep, ...fetchedItems];
-        console.log(
-          "[fetchMoreItems] prevItems:",
-          prevItems.length,
-          "| kept:",
-          itemsToKeep.length,
-          "| new total:",
-          newList.length
-        );
-        return newList;
-      });
-
-      // Reset currentIndex since we've removed old items
+      setItems(fetchedItems);
       setCurrentIndex(0);
     } catch (error) {
-      console.error("Error fetching more items:", error);
+      console.error("Error fetching items:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // refetch when applied filters change
+  useEffect(() => {
+    fetchItems();
+  }, [selectedCategories]);
+
+  // ------------------------ MORE ITEMS ------------------------
+  const fetchMoreItems = async () => {
+    if (isFetchingMore) return;
+
+    try {
+      setIsFetchingMore(true);
+      const response = await api.get("/items/feed");
+
+      const newItems = response.data.map((item: any) => ({
+        id: String(item.id),
+        name: item.name,
+        image_url_suffix: item.image_url_suffix,
+        image_url: item.image_url_suffix
+          ? `https://m.media-amazon.com/images/G/01/Shopbop/p${item.image_url_suffix}`
+          : "",
+        product_detail_url: item.product_detail_url,
+        designer_name: item.designer_name,
+        brand_name: item.designer_name,
+        price: item.price,
+        color: item.color,
+        stretch: item.stretch ?? null,
+        product_images: Array.isArray(item.product_images)
+          ? item.product_images
+          : [],
+        brand_code: "",
+        categories: Array.isArray(item.categories) ? item.categories : [],
+      }));
+
+      setItems((prev) => [...prev.slice(currentIndex), ...newItems]);
+      setCurrentIndex(0);
     } finally {
       setIsFetchingMore(false);
     }
   };
 
-  // Fetch on component mount
-  useEffect(() => {
-    fetchItems();
-  }, []);
-
-  // Log whenever items list changes
-  useEffect(() => {
-    console.log("[useEffect] items updated, new length:", items.length);
-  }, [items]);
-
-  // Check if we need to fetch more items when currentIndex changes
   useEffect(() => {
     const threshold = Math.floor(items.length * 0.75);
     if (
@@ -140,56 +153,41 @@ export default function SwipeScreen() {
       !loading &&
       !isFetchingMore
     ) {
-      console.log(
-        `[useEffect] currentIndex=${currentIndex}, threshold=${threshold}, fetching more items...`
-      );
       fetchMoreItems();
     }
   }, [currentIndex, items.length]);
 
+  // ------------------------ SWIPE ------------------------
   const handleSwipeLeft = async () => {
     const current = items[currentIndex];
     try {
       if (current && userId) {
         await api.post("/dislikes/", {
           user_id: Number(userId),
-          item_id: String(current.id),
+          item_id: current.id,
         });
       }
-    } catch (err) {
-      console.error("Error disliking item:", err);
     } finally {
-      console.log("Disliked:", current?.name);
-      setCurrentIndex((prevIndex) => prevIndex + 1);
+      setCurrentIndex((i) => i + 1);
     }
   };
 
   const handleSwipeRight = async () => {
-    const likedItem = items[currentIndex];
+    const liked = items[currentIndex];
     try {
-      if (likedItem && userId) {
+      if (liked && userId) {
         await api.post("/likes/", {
           user_id: Number(userId),
-          item_id: String(likedItem.id),
+          item_id: liked.id,
         });
       }
-    } catch (err) {
-      console.error("Error liking item:", err);
     } finally {
-      console.log("Liked:", likedItem?.name);
-      setLikedItems((prev) => (likedItem ? [...prev, likedItem] : prev));
-      setCurrentIndex((prevIndex) => prevIndex + 1);
+      setLikedItems((prev) => (liked ? [...prev, liked] : prev));
+      setCurrentIndex((i) => i + 1);
     }
   };
 
-  const handleDislikePress = () => {
-    handleSwipeLeft();
-  };
-
-  const handleLikePress = () => {
-    handleSwipeRight();
-  };
-
+  // ------------------------ UI ------------------------
   if (loading) {
     return (
       <ThemedView style={styles.container}>
@@ -207,93 +205,118 @@ export default function SwipeScreen() {
     return (
       <ThemedView style={styles.container}>
         <View style={styles.endContainer}>
-          <ThemedText type="title" style={{ color: "#000000" }}>
+          <ThemedText type="title" style={{ color: "#000" }}>
             No More Items!
           </ThemedText>
           <ThemedText style={styles.endSubtitle}>
             You've seen all available items
           </ThemedText>
-          <ThemedText style={styles.endStats}>
-            Liked: {likedItems.length} items
-          </ThemedText>
           <TouchableOpacity
             style={styles.resetButton}
-            onPress={() => {
-              setCurrentIndex(0);
-              fetchItems();
-            }}
+            onPress={fetchItems}
           >
-            <ThemedText style={styles.resetButtonText}>Start Over</ThemedText>
+            <ThemedText style={styles.resetButtonText}>
+              Start Over
+            </ThemedText>
           </TouchableOpacity>
         </View>
       </ThemedView>
     );
   }
 
-  const currentItem = items[currentIndex];
-  const nextItem =
+  const current = items[currentIndex];
+  const next =
     currentIndex + 1 < items.length ? items[currentIndex + 1] : null;
 
   return (
     <ThemedView style={styles.container}>
+      {/* HEADER */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.headerButton}>
-          <IconSymbol name="chevron.left" size={24} color="#000000" />
+          <IconSymbol name="chevron.left" size={24} color="#000" />
         </TouchableOpacity>
+
         <ThemedText type="title" style={styles.headerTitle}>
           Discover
         </ThemedText>
-        <TouchableOpacity style={styles.headerButton}>
-          <IconSymbol name="cart" size={24} color="#000000" />
+
+        <TouchableOpacity
+          style={styles.headerButton}
+          onPress={() => {
+            setPendingSelection(selectedCategories); // preload previous selection
+            setIsDropdownOpen(true);
+          }}
+        >
+          <IconSymbol
+            name="line.3.horizontal.decrease"
+            size={24}
+            color="#000"
+          />
         </TouchableOpacity>
       </View>
 
+      {/* MULTI-SELECT FILTER DROPDOWN */}
+      <FilterDropdown
+        categories={categories}
+        selectedCategories={pendingSelection}
+        setSelectedCategories={setPendingSelection}
+        onApply={() => {
+          setSelectedCategories(pendingSelection);
+          setIsDropdownOpen(false);
+        }}
+        onClear={() => setPendingSelection([])}
+        isOpen={isDropdownOpen}
+        setIsOpen={setIsDropdownOpen}
+      />
+
+      {/* CARD STACK */}
       <View style={styles.cardContainer}>
-        {nextItem && (
+        {next && (
           <ItemCard
-            key={`next-${nextItem.id}`}
-            item={nextItem}
+            key={`next-${next.id}`}
+            item={next}
+            isTop={false}
             onSwipeLeft={() => {}}
             onSwipeRight={() => {}}
-            isTop={false}
           />
         )}
         <ItemCard
-          key={`current-${currentItem.id}`}
-          item={currentItem}
+          key={`current-${current.id}`}
+          item={current}
+          isTop={true}
           onSwipeLeft={handleSwipeLeft}
           onSwipeRight={handleSwipeRight}
-          isTop={true}
         />
       </View>
 
+      {/* FOOTER ACTIONS */}
       <View style={styles.buttonsContainer}>
         <TouchableOpacity
           style={[styles.actionButton, styles.smallButton]}
-          activeOpacity={0.7}
         >
-          <IconSymbol name="arrow.counterclockwise" size={20} color="#bac0ca" />
+          <IconSymbol
+            name="arrow.counterclockwise"
+            size={20}
+            color="#bac0ca"
+          />
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.actionButton, styles.mainButton, styles.dislikeButton]}
-          onPress={handleDislikePress}
-          activeOpacity={0.7}
+          onPress={handleSwipeLeft}
         >
           <IconSymbol name="xmark" size={32} color="#545f71" />
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.actionButton, styles.mainButton, styles.likeButton]}
-          onPress={handleLikePress}
-          activeOpacity={0.7}
+          onPress={handleSwipeRight}
         >
           <IconSymbol name="heart.fill" size={32} color="#d49595" />
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.actionButton, styles.smallButton]}
-          activeOpacity={0.7}
         >
           <IconSymbol name="bag" size={20} color="#bac0ca" />
         </TouchableOpacity>
@@ -302,12 +325,9 @@ export default function SwipeScreen() {
   );
 }
 
+// --- Styles unchanged ---
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#ffffff",
-    paddingTop: 60,
-  },
+  container: { flex: 1, backgroundColor: "#ffffff", paddingTop: 60 },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -328,15 +348,7 @@ const styles = StyleSheet.create({
     color: "#000000",
     letterSpacing: 0.5,
   },
-  stats: {
-    fontSize: 14,
-    color: "#545f71",
-  },
-  cardContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
+  cardContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   buttonsContainer: {
     flexDirection: "row",
     justifyContent: "center",
@@ -355,36 +367,6 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
-  endContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-    gap: 16,
-  },
-  endSubtitle: {
-    fontSize: 16,
-    textAlign: "center",
-    color: "#545f71",
-  },
-  endStats: {
-    fontSize: 16,
-    textAlign: "center",
-    marginTop: 8,
-    color: "#545f71",
-  },
-  resetButton: {
-    backgroundColor: "#d49595",
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    borderRadius: 24,
-    marginTop: 24,
-  },
-  resetButtonText: {
-    color: "#ffffff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
   smallButton: {
     width: 52,
     height: 52,
@@ -392,18 +374,22 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#eef1f4",
   },
-  // Updated main button styling to match Figma design with larger size
-  mainButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+  mainButton: { width: 64, height: 64, borderRadius: 32 },
+  dislikeButton: { borderWidth: 2, borderColor: "#545f71" },
+  likeButton: { borderWidth: 2, borderColor: "#d49595" },
+  endContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
   },
-  dislikeButton: {
-    borderWidth: 2,
-    borderColor: "#545f71",
+  endSubtitle: { fontSize: 16, textAlign: "center", color: "#545f71" },
+  resetButton: {
+    backgroundColor: "#d49595",
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 24,
+    marginTop: 24,
   },
-  likeButton: {
-    borderWidth: 2,
-    borderColor: "#d49595",
-  },
+  resetButtonText: { color: "#ffffff", fontSize: 16, fontWeight: "600" },
 });
