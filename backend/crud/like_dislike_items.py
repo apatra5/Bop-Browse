@@ -40,18 +40,14 @@ def get_user_liked_items(db, user_id: int):
 
 def get_user_liked_items_for_closet_display(db, user_id: int):
     """Retrieve items liked by the user that are marked to show in closet."""
-    item_ids = (
-        db.query(UserLikeItems.item_id)
-        .filter(UserLikeItems.user_id == user_id)
-        .filter(UserLikeItems.show_in_closet == True)
-    ).all()
     items = (
         db.query(Item)
-        .filter(Item.id.in_([item_id for (item_id,) in item_ids]))
-        .options(
-            selectinload(Item.categories)
-        )
-    ).all()
+        .join(UserLikeItems)
+        .filter(UserLikeItems.user_id == user_id)
+        .filter(UserLikeItems.show_in_closet == True)
+        .order_by(UserLikeItems.like_timestamp.desc())
+        .all()
+    )
 
     return items
 
@@ -69,8 +65,19 @@ def remove_liked_items_from_closet_display(db, user_id: int, item_id: str):
 
 def remove_from_liked_items(db, user_id: int, item_id: str):
     """Remove an item from the user's liked items."""
+
+    user_like_item_row = db.query(UserLikeItems).filter(
+        UserLikeItems.user_id == user_id,
+        UserLikeItems.item_id == item_id
+    ).first()
+
+    if user_like_item_row:
+        db.delete(user_like_item_row)
+        db.commit()
+        
     user = db.query(User).filter(User.id == user_id).first()
     item = db.query(Item).filter(Item.id == item_id).first()
+    
     if item in user.liked_items:
         user.liked_items.remove(item)
         db.commit()
@@ -138,5 +145,34 @@ def _test_get_random_liked_items():
     items = get_user_liked_items_randomized(db, user_id=1, limit=5)
     print(f"Random liked items for user 1: {items}")
 
+def _test_user_like_item_timestamp():
+    from db.session import SessionLocal
+    db = SessionLocal()
+    item_ids = [
+        "1501599302",
+        "1593916693",
+        "1536117314",
+        "1543679714",
+        "1582218454",
+        "1592644365",
+        "1562062486",
+        "1596973394",
+        "1578597604",
+        "1519888602"
+    ]
+    for item_id in item_ids:
+        remove_from_liked_items(db, user_id=18, item_id=item_id)
+    for item_id in item_ids:
+        like_item(db, user_id=18, item_id=item_id)
+        print(f"Liked item {item_id} for user 18")
+    liked_items = get_user_liked_items_for_closet_display(db, user_id=18)
+    print("Liked items in order:")
+    for index, item in enumerate(liked_items):
+        if item.id != item_ids[len(item_ids) - 1 - index]:
+            print(f"Order mismatch at index {index}: expected {item_ids[len(item_ids) - 1 - index]}, got {item.id}")
+        else:
+            print(f"Item ID: {item.id}")
+            
+
 if __name__ == "__main__":
-    _test_get_random_liked_items()
+    _test_user_like_item_timestamp()
