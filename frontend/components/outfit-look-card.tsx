@@ -1,5 +1,13 @@
-import React from 'react';
-import { View, Image, Text, TouchableOpacity, StyleSheet, Dimensions, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Image,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+  ScrollView,
+} from 'react-native';
 
 interface OutfitLookCardProps {
   outfitData: any;
@@ -30,6 +38,16 @@ export const OutfitLookCard: React.FC<OutfitLookCardProps> = ({
   const primaryImageUrl = getImageUrl(primaryImage?.src);
   if (!primaryImageUrl && validStyleColors.length === 0) return null;
 
+  // ❤️ Heart toggle state
+  const [likedItems, setLikedItems] = useState<Set<number>>(new Set());
+
+  const toggleLike = (index: number) => {
+    const newSet = new Set(likedItems);
+    if (newSet.has(index)) newSet.delete(index);
+    else newSet.add(index);
+    setLikedItems(newSet);
+  };
+
   // Layout constants
   const horizontalMargin = 16 * 2;
   const containerPadding = 20 * 2;
@@ -37,17 +55,13 @@ export const OutfitLookCard: React.FC<OutfitLookCardProps> = ({
   const colGap = 12;
   const innerGap = 8;
 
-  // Available width for the grid row
   const containerWidth = Math.max(0, screenWidth - outerGutters);
 
-  // Primary image takes ~62% of width
   const primaryWidth = Math.round(containerWidth * 0.62);
   const primaryHeight = Math.round(primaryWidth * (16 / 9));
 
-  // Right side width
   const rightWidth = Math.max(0, containerWidth - primaryWidth - colGap);
 
-  // Product tile dimensions (2 rows high, portrait 9:16)
   const productTileHeight = Math.round((primaryHeight - innerGap) / 2);
   const productTileWidth = Math.round(productTileHeight * (9 / 16));
 
@@ -83,8 +97,11 @@ export const OutfitLookCard: React.FC<OutfitLookCardProps> = ({
             {/* Row 1 */}
             <View style={[styles.scrollRow, { height: productTileHeight, marginBottom: innerGap }]}>
               {validStyleColors.map((item: any, idx: number) => {
-                if (idx % 2 !== 0) return null; // Only odd indices for row 1
+                if (idx % 2 !== 0) return null;
+
                 const uri = getImageUrl(item?.image?.src);
+                const liked = likedItems.has(idx);
+
                 return (
                   <View
                     key={`r1-${idx}`}
@@ -97,6 +114,15 @@ export const OutfitLookCard: React.FC<OutfitLookCardProps> = ({
                       },
                     ]}
                   >
+                    {/* ❤️ Heart Button */}
+                    <TouchableOpacity
+                      style={styles.heartButton}
+                      onPress={() => toggleLike(idx)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.heartIcon}>{liked ? "♥" : "♡"}</Text>
+                    </TouchableOpacity>
+
                     {uri && (
                       <Image
                         source={{ uri }}
@@ -112,8 +138,11 @@ export const OutfitLookCard: React.FC<OutfitLookCardProps> = ({
             {/* Row 2 */}
             <View style={[styles.scrollRow, { height: productTileHeight }]}>
               {validStyleColors.map((item: any, idx: number) => {
-                if (idx % 2 === 0) return null; // Only even indices for row 2
+                if (idx % 2 === 0) return null;
+
                 const uri = getImageUrl(item?.image?.src);
+                const liked = likedItems.has(idx);
+
                 return (
                   <View
                     key={`r2-${idx}`}
@@ -126,6 +155,15 @@ export const OutfitLookCard: React.FC<OutfitLookCardProps> = ({
                       },
                     ]}
                   >
+                    {/* ❤️ Heart Button */}
+                    <TouchableOpacity
+                      style={styles.heartButton}
+                      onPress={() => toggleLike(idx)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.heartIcon}>{liked ? "♥" : "♡"}</Text>
+                    </TouchableOpacity>
+
                     {uri && (
                       <Image
                         source={{ uri }}
@@ -137,6 +175,7 @@ export const OutfitLookCard: React.FC<OutfitLookCardProps> = ({
                 );
               })}
             </View>
+
           </ScrollView>
         </View>
       </View>
@@ -149,7 +188,12 @@ export const OutfitLookCard: React.FC<OutfitLookCardProps> = ({
             {itemCount} {itemCount === 1 ? 'item' : 'items'}
           </Text>
         </View>
-        <TouchableOpacity style={styles.button} onPress={handleShopClick} activeOpacity={0.8}>
+
+        <TouchableOpacity
+          style={styles.button}
+          onPress={handleShopClick}
+          activeOpacity={0.8}
+        >
           <Text style={styles.buttonText}>Shop The Look</Text>
         </TouchableOpacity>
       </View>
@@ -199,6 +243,20 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+
+  /* ❤️ Clean floating heart (no shadow, no background) */
+  heartButton: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    zIndex: 10,
+    padding: 4,
+  },
+  heartIcon: {
+    fontSize: 16,
+    color: 'rgb(203,152,150)', // your color
+  },
+
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
