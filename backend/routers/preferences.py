@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from typing import List
 
 from db.session import SessionLocal
 from crud import like_dislike_items as crud_likes
 from schemas.preference import PreferenceRequest, PreferenceResponse
+from schemas.item import ItemWithCategories
 
 router = APIRouter(prefix="/preferences", tags=["preferences"])
 
@@ -44,4 +46,29 @@ def add_preference(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error adding preference: {str(e)}"
+        )
+
+
+@router.get("/{user_id}", response_model=List[ItemWithCategories])
+def get_user_preferences(
+    user_id: int,
+    db: Session = Depends(get_db)
+):
+    """Get all preferences (liked items) for a user"""
+    try:
+        preferences = crud_likes.get_user_liked_items_for_closet_display(db, user_id=user_id)
+        
+        if preferences is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        return preferences
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error fetching preferences: {str(e)}"
         )
