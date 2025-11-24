@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, String, ForeignKey, Table, Integer
+from sqlalchemy import Boolean, Column, String, ForeignKey, Table, Integer, func, DateTime
 from sqlalchemy.orm import relationship
 from db.base import Base
 
@@ -21,6 +21,7 @@ class UserLikeItems(Base):
     user_id = Column(Integer, ForeignKey('users.id'), primary_key=True)
     item_id = Column(String, ForeignKey('items.id'), primary_key=True)
     show_in_closet = Column(Boolean, default=True)
+    like_timestamp = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="liked_items")
     item = relationship("Item", back_populates="liked_by_users")
