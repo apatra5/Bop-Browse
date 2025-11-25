@@ -1,4 +1,3 @@
-// frontend/components/item-card.tsx
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { StyleSheet, View, Dimensions, TouchableOpacity, ScrollView } from "react-native";
@@ -10,7 +9,7 @@ import Animated, {
   runOnJS,
   interpolate,
 } from "react-native-reanimated";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { Gesture, GestureDetector } from "react-native-gesture-handler"; 
 import { ThemedText } from "./themed-text";
 import { Item } from "@/data/mock-items";
 import { IconSymbol } from "./ui/icon-symbol";
@@ -41,14 +40,8 @@ export function ItemCard({
   const opacity = useSharedValue(1);
 
   const [showDetails, setShowDetails] = useState(false);
-
-  const handleOpenDetails = () => {
-    setShowDetails(true);
-  };
-
-  const handleCloseDetails = () => {
-    setShowDetails(false);
-  };
+  const handleOpenDetails = () => setShowDetails(true);
+  const handleCloseDetails = () => setShowDetails(false);
 
   const panGesture = Gesture.Pan()
     .onUpdate((event) => {
@@ -87,7 +80,6 @@ export function ItemCard({
     opacity: opacity.value,
   }));
 
-  // Green overlay for LIKE
   const likeOverlayStyle = useAnimatedStyle(() => {
     const opacity = interpolate(
       translateX.value,
@@ -98,7 +90,6 @@ export function ItemCard({
     return { opacity: translateX.value > 0 ? opacity : 0 };
   });
 
-  // Red overlay for DISLIKE
   const dislikeOverlayStyle = useAnimatedStyle(() => {
     const opacity = interpolate(
       translateX.value,
@@ -121,10 +112,8 @@ export function ItemCard({
     <>
       <GestureDetector gesture={panGesture}>
         <Animated.View style={[styles.card, animatedStyle]}>
-          {/* Image Carousel */}
           <CarouselImages item={item} />
 
-          {/* Green overlay for LIKE */}
           <Animated.View
             style={[
               styles.colorOverlay,
@@ -133,7 +122,6 @@ export function ItemCard({
             ]}
           />
 
-          {/* Red overlay for DISLIKE */}
           <Animated.View
             style={[
               styles.colorOverlay,
@@ -142,7 +130,6 @@ export function ItemCard({
             ]}
           />
 
-          {/* Up Arrow Button - Bottom Right */}
           <TouchableOpacity
             style={styles.detailsButton}
             onPress={handleOpenDetails}
@@ -151,26 +138,19 @@ export function ItemCard({
             <IconSymbol name="chevron.up" size={24} color="#ffffff" />
           </TouchableOpacity>
 
-          {/* Bottom info gradient */}
           <LinearGradient
             colors={["transparent", "rgba(0,0,0,0.8)"]}
             style={styles.gradient}
           >
             <View style={styles.infoContainer}>
-              <ThemedText
-                type="title"
-                style={styles.itemName}
-                numberOfLines={2}
-              >
+              <ThemedText type="title" style={styles.itemName} numberOfLines={2}>
                 {item.name}
               </ThemedText>
               <ThemedText type="defaultSemiBold" style={styles.brandName}>
                 {item.brand_name}
               </ThemedText>
               {item.price && (
-                <ThemedText style={styles.price}>
-                  {item.price}
-                </ThemedText>
+                <ThemedText style={styles.price}>{item.price}</ThemedText>
               )}
               <View style={styles.categoriesContainer}>
                 {item.categories.map((category) => (
@@ -186,23 +166,22 @@ export function ItemCard({
         </Animated.View>
       </GestureDetector>
 
-      {/* Product Detail Modal */}
-      <ProductDetailModal
-        itemId={item.id}
-        visible={showDetails}
-        onClose={handleCloseDetails}
-      />
+      <ProductDetailModal itemId={item.id} visible={showDetails} onClose={handleCloseDetails} />
     </>
   );
 }
 
-// Lightweight carousel component (infinite loop style) using product_images suffixes
+// =======================================================
+//            FIXED CAROUSEL (Tap + Swipe Friendly)
+// =======================================================
+
 function CarouselImages({ item }: { item: Item }) {
   const PREFIX = "https://m.media-amazon.com/images/G/01/Shopbop/p";
   const scrollRef = useRef<ScrollView | null>(null);
   const [pageWidth, setPageWidth] = useState(CARD_WIDTH);
   const [logicalIndex, setLogicalIndex] = useState(0);
-  const virtualIndexRef = useRef(1); // starts at first real image
+  const virtualIndexRef = useRef(1);
+
   const images: string[] = (item.product_images && item.product_images.length
     ? item.product_images
     : item.image_url_suffix
@@ -210,60 +189,80 @@ function CarouselImages({ item }: { item: Item }) {
       : [""]
   ).map((s) => (s.startsWith("http") ? s : `${PREFIX}${s}`));
 
-  // Build virtual array [last, ...images, first]
   const virtImages = [images[images.length - 1], ...images, images[0]];
+
   const AUTOPLAY_MS = 4000;
   const JUMP_DELAY_MS = 350;
-  // Use number for React Native timers
   const intervalRef = useRef<number | null>(null);
 
-  useEffect(() => {
-    // Initialize position
-    if (scrollRef.current) {
-      scrollRef.current.scrollTo({ x: pageWidth * 1, animated: false });
-      virtualIndexRef.current = 1;
-      setLogicalIndex(0);
+  const goTo = (nextVirtual: number) => {
+    if (!scrollRef.current) return;
+
+    scrollRef.current.scrollTo({ x: pageWidth * nextVirtual, animated: true });
+    virtualIndexRef.current = nextVirtual;
+
+    if (nextVirtual === virtImages.length - 1) {
+      setTimeout(() => {
+        if (!scrollRef.current) return;
+        scrollRef.current.scrollTo({ x: pageWidth * 1, animated: false });
+        virtualIndexRef.current = 1;
+        setLogicalIndex(0);
+      }, JUMP_DELAY_MS);
+    } else if (nextVirtual === 0) {
+      setTimeout(() => {
+        scrollRef.current?.scrollTo({
+          x: pageWidth * (virtImages.length - 2),
+          animated: false,
+        });
+        virtualIndexRef.current = virtImages.length - 2;
+        setLogicalIndex(images.length - 1);
+      }, JUMP_DELAY_MS);
+    } else {
+      setLogicalIndex((nextVirtual - 1 + images.length) % images.length);
     }
-  }, [pageWidth, images.length]);
+  };
+
+  const goNext = () => goTo(virtualIndexRef.current + 1);
+  const goPrev = () => goTo(virtualIndexRef.current - 1);
 
   useEffect(() => {
-  if (intervalRef.current) clearInterval(intervalRef.current);
-  intervalRef.current = setInterval(() => {
-      // advance virtual index
-      let nextVirtual = virtualIndexRef.current + 1;
-      if (scrollRef.current) {
-        scrollRef.current.scrollTo({ x: pageWidth * nextVirtual, animated: true });
-      }
-      virtualIndexRef.current = nextVirtual;
-      if (nextVirtual === virtImages.length - 1) {
-        // wrapped to cloned first; jump back
-        setTimeout(() => {
-          if (scrollRef.current) {
-            scrollRef.current.scrollTo({ x: pageWidth * 1, animated: false });
-            virtualIndexRef.current = 1;
-            setLogicalIndex(0);
-          }
-        }, JUMP_DELAY_MS);
-      } else {
-        const logical = (nextVirtual - 1 + images.length) % images.length;
-        setLogicalIndex(logical);
-      }
-    }, AUTOPLAY_MS);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    };
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(goNext, AUTOPLAY_MS);
+    return () => clearInterval(intervalRef.current!);
   }, [images.length, pageWidth, virtImages.length]);
 
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ x: pageWidth * 1, animated: false });
+    virtualIndexRef.current = 1;
+    setLogicalIndex(0);
+  }, [pageWidth, images.length]);
+
+  const tapGesture = Gesture.Tap()
+    .runOnJS(true)
+    .maxDuration(250)
+    .onEnd((e) => {
+      if (e.x < pageWidth / 2) goPrev();
+      else goNext();
+    });
+
   return (
-    <View style={styles.carouselContainer} onLayout={(e) => setPageWidth(e.nativeEvent.layout.width)}>
+    <View
+      style={styles.carouselContainer}
+      onLayout={(e) => setPageWidth(e.nativeEvent.layout.width)}
+    >
+      <GestureDetector gesture={tapGesture}>
+        <Animated.View
+          style={[StyleSheet.absoluteFill, { zIndex: 10 }]}
+          pointerEvents="none"     // ← FIX: allows button presses to work!
+        />
+      </GestureDetector>
+
       <ScrollView
         ref={scrollRef}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        scrollEnabled={false} // autoplay only to avoid gesture conflict with swipe deck
-        contentContainerStyle={{ alignItems: "center" }}
+        scrollEnabled={false}
       >
         {virtImages.map((src, i) => (
           <View key={i} style={{ width: pageWidth, height: CARD_HEIGHT }}>
@@ -275,12 +274,15 @@ function CarouselImages({ item }: { item: Item }) {
           </View>
         ))}
       </ScrollView>
-      {/* Simple dots */}
+
       <View style={styles.carouselDots}>
         {images.map((_, i) => (
           <View
             key={i}
-            style={[styles.carouselDot, i === logicalIndex && styles.carouselDotActive]}
+            style={[
+              styles.carouselDot,
+              i === logicalIndex && styles.carouselDotActive,
+            ]}
           />
         ))}
       </View>
@@ -326,12 +328,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.6)",
     justifyContent: "center",
     alignItems: "center",
-    zIndex: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    zIndex: 20,
   },
   gradient: {
     position: "absolute",
@@ -341,7 +338,7 @@ const styles = StyleSheet.create({
     height: "40%",
     justifyContent: "flex-end",
     padding: 20,
-    paddingBottom: 30, // Make room for the details button
+    paddingBottom: 30,
     zIndex: 3,
   },
   infoContainer: {
@@ -387,12 +384,12 @@ const styles = StyleSheet.create({
   },
   carouselDots: {
     position: "absolute",
-    bottom: 20, // lift slightly for better separation from gradient
+    bottom: 20,
     width: "100%",
     flexDirection: "row",
     justifyContent: "center",
     gap: 6,
-    zIndex: 6, // above gradient (zIndex 3) and overlays
+    zIndex: 6,
   },
   carouselDot: {
     width: 6,
