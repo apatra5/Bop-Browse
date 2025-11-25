@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   Modal,
   FlatList,
+  Platform,
 } from "react-native";
 import { ThemedText } from "./themed-text";
 import { IconSymbol } from "./ui/icon-symbol";
@@ -44,30 +45,32 @@ export function FilterDropdown({
       animationType="fade"
       onRequestClose={() => setIsOpen(false)}
     >
-      {/* backdrop */}
+      {/* Invisible Backdrop to close modal */}
       <TouchableOpacity
         style={styles.overlay}
         activeOpacity={1}
         onPress={() => setIsOpen(false)}
       />
 
-      {/* dropdown */}
+      {/* Dropdown Content */}
       <View style={styles.dropdownContainer}>
         <View style={styles.dropdown}>
           <FlatList
             data={categories}
             keyExtractor={(item) => item}
-            showsVerticalScrollIndicator={false}
-            style={{ maxHeight: 300 }}
+            showsVerticalScrollIndicator={true}
+            style={{ maxHeight: 320 }}
+            contentContainerStyle={{ paddingVertical: 8 }}
             renderItem={({ item }) => {
               const checked = selectedCategories.includes(item);
 
               return (
                 <TouchableOpacity
                   style={styles.option}
-                  activeOpacity={0.6}
+                  activeOpacity={0.7}
                   onPress={() => toggleCategory(item)}
                 >
+                  {/* Custom Checkbox */}
                   <View
                     style={[
                       styles.checkbox,
@@ -77,7 +80,7 @@ export function FilterDropdown({
                     {checked && (
                       <IconSymbol
                         name="checkmark"
-                        size={14}
+                        size={12}
                         color="#fff"
                       />
                     )}
@@ -96,14 +99,15 @@ export function FilterDropdown({
             }}
           />
 
-          {/* footer actions */}
+          {/* Footer Actions */}
           <View style={styles.actionsRow}>
             <TouchableOpacity
               style={styles.clearButton}
               onPress={onClear}
+              activeOpacity={0.7}
             >
               <ThemedText style={styles.clearButtonText}>
-                Clear All
+                Clear
               </ThemedText>
             </TouchableOpacity>
 
@@ -111,11 +115,12 @@ export function FilterDropdown({
               style={styles.applyButton}
               onPress={() => {
                 onApply();
-                setIsOpen(false); // ensure closing
+                setIsOpen(false);
               }}
+              activeOpacity={0.8}
             >
               <ThemedText style={styles.applyButtonText}>
-                Apply
+                APPLY
               </ThemedText>
             </TouchableOpacity>
           </View>
@@ -128,23 +133,28 @@ export function FilterDropdown({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.2)', // Slight dimming of background
   },
 
   dropdownContainer: {
     position: "absolute",
-    top: 100,
+    top: Platform.OS === 'ios' ? 110 : 90, // Adjusted for typical header height
     right: 20,
+    // Ensure it sits above everything else
+    zIndex: 1000,
   },
 
   dropdown: {
     backgroundColor: "#fff",
-    width: 260,
-    borderRadius: 12,
-    paddingVertical: 10,
+    width: 280,
+    borderRadius: 8, // Slightly sharper corners
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+    // Premium Shadow
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
     elevation: 10,
     overflow: "hidden",
   },
@@ -152,65 +162,70 @@ const styles = StyleSheet.create({
   option: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 18,
-    gap: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    gap: 14,
   },
 
   checkbox: {
-    width: 20,
-    height: 20,
+    width: 18,
+    height: 18,
     borderRadius: 4,
-    borderWidth: 1.5,
-    borderColor: "#d49595",
+    borderWidth: 1,
+    borderColor: "#ccc", // Neutral grey border
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "transparent",
   },
 
   checkboxChecked: {
-    backgroundColor: "#d49595",
-    borderColor: "#d49595",
+    backgroundColor: "#000", // Solid Black
+    borderColor: "#000",
   },
 
   optionText: {
-    fontSize: 15,
-    color: "#333",
+    fontSize: 14,
+    color: "#444",
+    letterSpacing: 0.2,
   },
 
   optionTextSelected: {
     fontWeight: "600",
-    color: "#d49595",
+    color: "#000",
   },
 
   actionsRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    padding: 12,
+    alignItems: 'center',
+    padding: 16,
     borderTopWidth: 1,
-    borderTopColor: "#eee",
+    borderTopColor: "#f5f5f5",
+    backgroundColor: '#fff',
   },
 
   clearButton: {
     paddingVertical: 8,
-    paddingHorizontal: 4,
+    paddingHorizontal: 8,
   },
 
   clearButtonText: {
     color: "#888",
-    fontSize: 14,
+    fontSize: 13,
+    fontWeight: '500',
   },
 
   applyButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    backgroundColor: "#d49595",
-    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    backgroundColor: "#000", // Black Button
+    borderRadius: 6,
   },
 
   applyButtonText: {
     color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 1, // Uppercase spacing
   },
 });

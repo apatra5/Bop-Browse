@@ -1,81 +1,142 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   StyleSheet,
   View,
   Image,
-  TouchableOpacity,
+  Pressable,
   Animated,
 } from 'react-native';
-import { ThemedText } from '@/components/themed-text';
+import { Ionicons } from '@expo/vector-icons'; 
 
 interface PreferenceCardProps {
   imageUrl: string;
   selected: boolean;
   onToggle: () => void;
+  width?: number;
+  height?: number;
 }
 
-export function PreferenceCard({ imageUrl, selected, onToggle }: PreferenceCardProps) {
+export function PreferenceCard({ 
+  imageUrl, 
+  selected, 
+  onToggle,
+  width,
+  height 
+}: PreferenceCardProps) {
+  // Animation values
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const overlayOpacity = useRef(new Animated.Value(0)).current;
 
-  const animatePress = () => {
+  // Run animation when 'selected' state changes
+  useEffect(() => {
+    Animated.timing(overlayOpacity, {
+      toValue: selected ? 1 : 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [selected]);
+
+  const handlePress = () => {
+    // 1. Trigger haptic visual feedback (Scale Down -> Up)
     Animated.sequence([
-      Animated.timing(scaleAnim, { toValue: 0.92, duration: 90, useNativeDriver: true }),
-      Animated.timing(scaleAnim, { toValue: 1, duration: 120, useNativeDriver: true }),
+      Animated.timing(scaleAnim, { toValue: 0.95, duration: 100, useNativeDriver: true }),
+      Animated.timing(scaleAnim, { toValue: 1, duration: 100, useNativeDriver: true }),
     ]).start();
+    
+    // 2. Toggle state
     onToggle();
   };
 
   return (
-    <Animated.View style={[styles.card, { transform: [{ scale: scaleAnim }] }]}>
-      <Image source={{ uri: imageUrl }} style={styles.image} resizeMode="cover" />
+    <Pressable 
+      onPress={handlePress}
+      style={[
+        styles.cardContainer, 
+        width ? { width } : undefined,
+        height ? { height } : undefined,
+      ]}
+    >
+      <Animated.View style={[styles.innerContainer, { transform: [{ scale: scaleAnim }] }]}>
+        {/* Product Image */}
+        <Image 
+          source={{ uri: imageUrl }} 
+          style={styles.image} 
+          resizeMode="cover" 
+        />
 
-      <TouchableOpacity onPress={animatePress} style={styles.heartButton} activeOpacity={0.8}>
-        <ThemedText
-          style={[
-            styles.heartIcon,
-            { color: selected ? 'rgb(215,130,125)' : '#ffffffd9' },
-          ]}
-        >
-          {selected ? '♥' : '♡'}
-        </ThemedText>
-      </TouchableOpacity>
-    </Animated.View>
+        {/* Selected Overlay (Darkens image + Shows Check) */}
+        <Animated.View style={[styles.selectedOverlay, { opacity: overlayOpacity }]}>
+          <View style={styles.checkCircle}>
+            <Ionicons name="checkmark" size={16} color="#000" />
+          </View>
+        </Animated.View>
+        
+        {/* Unselected Indicator (Empty Circle) - Optional, helps discoverability */}
+        {!selected && (
+          <View style={styles.unselectedCircle} />
+        )}
+      </Animated.View>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    flex: 1,
-    aspectRatio: 0.68,
-    backgroundColor: '#fdfdfd',
-    borderRadius: 10,
-    overflow: 'hidden',
-
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
+  cardContainer: {
+    // Default fallback if width/height not passed
+    aspectRatio: 0.7, 
+    borderRadius: 8,
+    // No shadow on container, keeps grid clean
   },
-
+  innerContainer: {
+    flex: 1,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#f0f0f0', // Placeholder gray
+  },
   image: {
     width: '100%',
     height: '100%',
   },
-
-  heartButton: {
-    position: 'absolute',
-    bottom: 12,
-    right: 12,
-
-    // ❤️ REMOVE DARK SHADOW
-    backgroundColor: 'transparent',  
-    padding: 0,
+  
+  // Overlay that appears when selected
+  selectedOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.15)', // Subtle darkening
+    justifyContent: 'center', // Center the checkmark? Or Corner?
+    alignItems: 'center',
+    // Alternatively, align to top-right for corner style:
+    // justifyContent: 'flex-start',
+    // alignItems: 'flex-end',
+    // padding: 10
   },
 
-  heartIcon: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.9)', // clean white outline like Shopbop
+  // The Checkmark Circle
+  checkCircle: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+
+  // The Empty Circle (Unselected)
+  unselectedCircle: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.8)', // Semi-transparent white ring
+    backgroundColor: 'transparent',
   },
 });

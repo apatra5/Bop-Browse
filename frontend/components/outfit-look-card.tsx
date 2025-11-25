@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Image,
@@ -14,6 +14,7 @@ interface OutfitLookCardProps {
   lookTitle?: string;
   imageBaseUrl?: string;
   onShopClick?: (outfit: any) => void;
+  onItemClick?: (item: any) => void;
 }
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -23,6 +24,7 @@ export const OutfitLookCard: React.FC<OutfitLookCardProps> = ({
   lookTitle = "Look 1",
   imageBaseUrl = "https://m.media-amazon.com/images/G/01/Shopbop/p",
   onShopClick,
+  onItemClick
 }) => {
   if (!outfitData) return null;
 
@@ -38,42 +40,47 @@ export const OutfitLookCard: React.FC<OutfitLookCardProps> = ({
   const primaryImageUrl = getImageUrl(primaryImage?.src);
   if (!primaryImageUrl && validStyleColors.length === 0) return null;
 
-  // ❤️ Heart toggle state
-  const [likedItems, setLikedItems] = useState<Set<number>>(new Set());
+  // --- Layout Calculations (Restored to Original Ratios) ---
+  
+  // Card margins (16 horizontal) + Card internal padding (16)
+  const cardHorizontalMargin = 16 * 2;
+  const cardInternalPadding = 16 * 2;
+  const availableWidth = screenWidth - cardHorizontalMargin - cardInternalPadding;
 
-  const toggleLike = (index: number) => {
-    const newSet = new Set(likedItems);
-    if (newSet.has(index)) newSet.delete(index);
-    else newSet.add(index);
-    setLikedItems(newSet);
-  };
-
-  // Layout constants
-  const horizontalMargin = 16 * 2;
-  const containerPadding = 20 * 2;
-  const outerGutters = horizontalMargin + containerPadding;
   const colGap = 12;
   const innerGap = 8;
 
-  const containerWidth = Math.max(0, screenWidth - outerGutters);
-
-  const primaryWidth = Math.round(containerWidth * 0.62);
+  // Primary is roughly 62% of the card width
+  const primaryWidth = Math.round(availableWidth * 0.62);
+  // Original Ratio: Height = Width * (16/9)
   const primaryHeight = Math.round(primaryWidth * (16 / 9));
 
-  const rightWidth = Math.max(0, containerWidth - primaryWidth - colGap);
+  // The right column takes whatever space is left
+  const rightWidth = Math.max(0, availableWidth - primaryWidth - colGap);
 
+  // Split height for two rows of products
   const productTileHeight = Math.round((primaryHeight - innerGap) / 2);
+  // Original Ratio: Width = Height * (9/16)
   const productTileWidth = Math.round(productTileHeight * (9 / 16));
 
-  const handleShopClick = () => onShopClick?.(outfitData);
-
   return (
-    <View style={styles.container}>
-      {/* Image Row */}
+    <View style={styles.cardContainer}>
+      
+      {/* Header: Title + Item Count Badge */}
+      <View style={styles.header}>
+        <Text style={styles.title}>{lookTitle}</Text>
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{itemCount} Items</Text>
+        </View>
+      </View>
+
+      {/* Main Content Row */}
       <View style={[styles.rowWrapper, { height: primaryHeight }]}>
-        {/* Primary Image */}
+        
+        {/* Primary Image (Left) */}
         {primaryImageUrl && (
-          <View
+          <TouchableOpacity 
+            activeOpacity={0.9}
             style={[
               styles.primaryImageContainer,
               { width: primaryWidth, height: primaryHeight, marginRight: colGap },
@@ -81,210 +88,166 @@ export const OutfitLookCard: React.FC<OutfitLookCardProps> = ({
           >
             <Image
               source={{ uri: primaryImageUrl }}
-              style={styles.primaryImage}
+              style={styles.image}
               resizeMode="cover"
             />
-          </View>
+          </TouchableOpacity>
         )}
 
-        {/* Right Scrollable Column */}
+        {/* Product Grid (Right - Scrollable) */}
         <View style={[styles.rightColumn, { width: rightWidth, height: primaryHeight }]}>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
           >
-            {/* Row 1 */}
-            <View style={[styles.scrollRow, { height: productTileHeight, marginBottom: innerGap }]}>
-              {validStyleColors.map((item: any, idx: number) => {
-                if (idx % 2 !== 0) return null;
-
-                const uri = getImageUrl(item?.image?.src);
-                const liked = likedItems.has(idx);
-
-                return (
-                  <View
-                    key={`r1-${idx}`}
-                    style={[
-                      styles.productImageContainer,
-                      {
-                        width: productTileWidth,
-                        height: productTileHeight,
-                        marginRight: innerGap,
-                      },
-                    ]}
-                  >
-                    {/* ❤️ Heart Button */}
+            <View>
+              {/* Row 1 */}
+              <View style={[styles.scrollRow, { height: productTileHeight, marginBottom: innerGap }]}>
+                {validStyleColors.map((item: any, idx: number) => {
+                  if (idx % 2 !== 0) return null;
+                  const uri = getImageUrl(item?.image?.src);
+                  return (
                     <TouchableOpacity
-                      style={styles.heartButton}
-                      onPress={() => toggleLike(idx)}
+                      key={`r1-${idx}`}
+                      onPress={() => onItemClick?.(item)}
                       activeOpacity={0.8}
+                      style={[
+                        styles.productImageContainer,
+                        {
+                          width: productTileWidth,
+                          height: productTileHeight,
+                          marginRight: innerGap,
+                        },
+                      ]}
                     >
-                      <Text style={styles.heartIcon}>{liked ? "♥" : "♡"}</Text>
+                      {uri && <Image source={{ uri }} style={styles.image} resizeMode="cover" />}
                     </TouchableOpacity>
+                  );
+                })}
+              </View>
 
-                    {uri && (
-                      <Image
-                        source={{ uri }}
-                        style={styles.productImage}
-                        resizeMode="cover"
-                      />
-                    )}
-                  </View>
-                );
-              })}
-            </View>
-
-            {/* Row 2 */}
-            <View style={[styles.scrollRow, { height: productTileHeight }]}>
-              {validStyleColors.map((item: any, idx: number) => {
-                if (idx % 2 === 0) return null;
-
-                const uri = getImageUrl(item?.image?.src);
-                const liked = likedItems.has(idx);
-
-                return (
-                  <View
-                    key={`r2-${idx}`}
-                    style={[
-                      styles.productImageContainer,
-                      {
-                        width: productTileWidth,
-                        height: productTileHeight,
-                        marginRight: innerGap,
-                      },
-                    ]}
-                  >
-                    {/* ❤️ Heart Button */}
+              {/* Row 2 */}
+              <View style={[styles.scrollRow, { height: productTileHeight }]}>
+                {validStyleColors.map((item: any, idx: number) => {
+                  if (idx % 2 === 0) return null;
+                  const uri = getImageUrl(item?.image?.src);
+                  return (
                     <TouchableOpacity
-                      style={styles.heartButton}
-                      onPress={() => toggleLike(idx)}
+                      key={`r2-${idx}`}
+                      onPress={() => onItemClick?.(item)}
                       activeOpacity={0.8}
+                      style={[
+                        styles.productImageContainer,
+                        {
+                          width: productTileWidth,
+                          height: productTileHeight,
+                          marginRight: innerGap,
+                        },
+                      ]}
                     >
-                      <Text style={styles.heartIcon}>{liked ? "♥" : "♡"}</Text>
+                      {uri && <Image source={{ uri }} style={styles.image} resizeMode="cover" />}
                     </TouchableOpacity>
-
-                    {uri && (
-                      <Image
-                        source={{ uri }}
-                        style={styles.productImage}
-                        resizeMode="cover"
-                      />
-                    )}
-                  </View>
-                );
-              })}
+                  );
+                })}
+              </View>
             </View>
-
           </ScrollView>
         </View>
       </View>
 
-      {/* Footer */}
-      <View style={styles.footer}>
-        <View style={styles.textSection}>
-          <Text style={styles.title}>{lookTitle}</Text>
-          <Text style={styles.itemCount}>
-            {itemCount} {itemCount === 1 ? 'item' : 'items'}
-          </Text>
-        </View>
-
-        <TouchableOpacity
-          style={styles.button}
-          onPress={handleShopClick}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.buttonText}>Shop The Look</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Footer Button */}
+      <TouchableOpacity
+        style={styles.shopButton}
+        onPress={() => onShopClick?.(outfitData)}
+        activeOpacity={0.85}
+      >
+        <Text style={styles.shopButtonText}>SHOP THE LOOK</Text>
+      </TouchableOpacity>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  cardContainer: {
     backgroundColor: '#fff',
-    padding: 20,
+    borderRadius: 12,
+    padding: 16,
     marginHorizontal: 16,
     marginVertical: 12,
+    // Soft Modern Shadow
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#f2f2f2',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    letterSpacing: 0.5,
+  },
+  badge: {
+    backgroundColor: '#f5f5f5',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#555',
   },
   rowWrapper: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 24,
+    marginBottom: 20,
   },
   primaryImageContainer: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
     overflow: 'hidden',
-  },
-  primaryImage: {
-    width: '100%',
-    height: '100%',
   },
   rightColumn: {
     overflow: 'hidden',
   },
   scrollContent: {
-    flexDirection: 'column',
+    paddingRight: 4, // mild padding for scroll end
   },
   scrollRow: {
     flexDirection: 'row',
   },
   productImageContainer: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f9f9f9',
+    borderRadius: 6,
     overflow: 'hidden',
   },
-  productImage: {
+  image: {
     width: '100%',
     height: '100%',
   },
-
-  /* ❤️ Clean floating heart (no shadow, no background) */
-  heartButton: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    zIndex: 10,
-    padding: 4,
-  },
-  heartIcon: {
-    fontSize: 16,
-    color: 'rgb(203,152,150)', // your color
-  },
-
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 16,
-  },
-  textSection: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '600',
-    marginBottom: 4,
-    color: '#000',
-  },
-  itemCount: {
-    fontSize: 16,
-    color: '#666',
-  },
-  button: {
+  shopButton: {
     backgroundColor: '#000',
-    paddingHorizontal: 28,
-    paddingVertical: 12,
-    borderRadius: 4,
+    paddingVertical: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
   },
-  buttonText: {
+  shopButtonText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
   },
 });

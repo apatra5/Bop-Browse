@@ -3,40 +3,37 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Item } from "@/data/mock-items";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from 'expo-router';
 import {
   StyleSheet,
   TouchableOpacity,
   View,
   ActivityIndicator,
+  StatusBar,
+  Dimensions
 } from "react-native";
 import api from "@/api/axios";
 import { useAuth } from "@/contexts/AuthContext";
 import { FilterDropdown } from "@/components/filter-dropdown";
 
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+
 export default function SwipeScreen() {
   const { userId } = useAuth();
   const router = useRouter();
+  
+  // State
   const [items, setItems] = useState<Item[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [likedItems, setLikedItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
 
-  // --- Filter categories ---
+  // --- Filter Logic ---
   const categories = [
-    "Dresses",
-    "Tops",
-    "Matching Sets",
-    "Swimsuits & Cover-Ups",
-    "Sweaters & Knits",
-    "Jeans",
-    "Pants",
-    "Jackets & Coats",
-    "Skirts",
-    "Activewear",
-    "Wide Leg & Flare",
+    "Dresses", "Tops", "Matching Sets", "Swimsuits & Cover-Ups",
+    "Sweaters & Knits", "Jeans", "Pants", "Jackets & Coats",
+    "Skirts", "Activewear", "Wide Leg & Flare",
   ];
 
   const CATEGORY_MAP: Record<string, string[]> = {
@@ -57,47 +54,18 @@ export default function SwipeScreen() {
   const [pendingSelection, setPendingSelection] = useState<string[]>([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  // ------------------------ FETCH ITEMS ------------------------
-  const fetchItems = async () => {
+  // --- Data Fetching ---
+  const fetchItems = useCallback(async () => {
     try {
       setLoading(true);
-
-      const categoryIds = selectedCategories.flatMap(
-        (cat) => CATEGORY_MAP[cat] || []
-      );
-
-      console.log("Fetching items for:", selectedCategories, categoryIds);
+      const categoryIds = selectedCategories.flatMap((cat) => CATEGORY_MAP[cat] || []);
 
       const response = await api.post("/items/personalized-feed", {
         user_id: userId,
         category_ids: categoryIds,
       });
 
-      const fetchedItems = response.data.map((item: any) => {
-        const suffix = item.image_url_suffix;
-        const fullImageUrl = suffix
-          ? `https://m.media-amazon.com/images/G/01/Shopbop/p${suffix}`
-          : "";
-
-        return {
-          id: String(item.id),
-          name: item.name,
-          image_url: fullImageUrl,
-          image_url_suffix: suffix,
-          product_detail_url: item.product_detail_url,
-          designer_name: item.designer_name,
-          brand_name: item.designer_name,
-          price: item.price,
-          color: item.color,
-          stretch: item.stretch ?? null,
-          product_images: Array.isArray(item.product_images)
-            ? item.product_images
-            : [],
-          brand_code: "",
-          categories: Array.isArray(item.categories) ? item.categories : [],
-        };
-      });
-
+      const fetchedItems = mapResponseToItems(response.data);
       setItems(fetchedItems);
       setCurrentIndex(0);
     } catch (error) {
@@ -105,134 +73,123 @@ export default function SwipeScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedCategories, userId]);
 
-  // refetch when applied filters change
   useEffect(() => {
     fetchItems();
-  }, [selectedCategories]);
+  }, [fetchItems]);
 
-  // ------------------------ MORE ITEMS ------------------------
   const fetchMoreItems = async () => {
     if (isFetchingMore) return;
-
     try {
       setIsFetchingMore(true);
       const response = await api.get("/items/feed");
-
-      const newItems = response.data.map((item: any) => ({
-        id: String(item.id),
-        name: item.name,
-        image_url_suffix: item.image_url_suffix,
-        image_url: item.image_url_suffix
-          ? `https://m.media-amazon.com/images/G/01/Shopbop/p${item.image_url_suffix}`
-          : "",
-        product_detail_url: item.product_detail_url,
-        designer_name: item.designer_name,
-        brand_name: item.designer_name,
-        price: item.price,
-        color: item.color,
-        stretch: item.stretch ?? null,
-        product_images: Array.isArray(item.product_images)
-          ? item.product_images
-          : [],
-        brand_code: "",
-        categories: Array.isArray(item.categories) ? item.categories : [],
-      }));
-
-      setItems((prev) => [...prev.slice(currentIndex), ...newItems]);
-      setCurrentIndex(0);
+      const newItems = mapResponseToItems(response.data);
+      setItems((prev) => [...prev, ...newItems]); // Append to end
+    } catch(e) {
+      console.error(e);
     } finally {
       setIsFetchingMore(false);
     }
   };
 
+  // Helper to map API response
+  const mapResponseToItems = (data: any[]): Item[] => {
+    return data.map((item: any) => {
+      const suffix = item.image_url_suffix;
+      // If suffix exists, construct URL, otherwise fallback to empty or raw image_url
+      const fullImageUrl = suffix
+          ? `https://m.media-amazon.com/images/G/01/Shopbop/p${suffix}`
+          : item.image_url || "";
+
+      return {
+        id: String(item.id),
+        name: item.name,
+        image_url: fullImageUrl,
+        image_url_suffix: suffix,
+        product_detail_url: item.product_detail_url,
+        designer_name: item.designer_name || item.brand_name,
+        brand_name: item.designer_name || item.brand_name,
+        price: item.price,
+        color: item.color,
+        stretch: item.stretch ?? null,
+        product_images: Array.isArray(item.product_images) ? item.product_images : [],
+        categories: Array.isArray(item.categories) ? item.categories : [],
+        // Fallbacks
+        brand_code: "", 
+      };
+    });
+  };
+
+  // Pagination trigger
   useEffect(() => {
-    const threshold = Math.floor(items.length * 0.75);
-    if (
-      items.length > 0 &&
-      currentIndex >= threshold &&
-      !loading &&
-      !isFetchingMore
-    ) {
+    const threshold = items.length - 4; // Fetch when 4 items left
+    if (items.length > 0 && currentIndex >= threshold && !loading && !isFetchingMore) {
       fetchMoreItems();
     }
   }, [currentIndex, items.length]);
 
-  // ------------------------ SWIPE ------------------------
+  // --- Interaction Handlers ---
   const handleSwipeLeft = async () => {
     const current = items[currentIndex];
-    try {
-      if (current && userId) {
-        await api.post("/dislikes/", {
-          user_id: Number(userId),
-          item_id: current.id,
-        });
-      }
-    } finally {
-      setCurrentIndex((i) => i + 1);
+    if (current && userId) {
+      api.post("/dislikes/", { user_id: Number(userId), item_id: current.id }).catch(console.error);
     }
+    setCurrentIndex((prev) => prev + 1);
   };
 
   const handleSwipeRight = async () => {
-    const liked = items[currentIndex];
-    try {
-      if (liked && userId) {
-        await api.post("/likes/", {
-          user_id: Number(userId),
-          item_id: liked.id,
-        });
-      }
-    } finally {
-      setLikedItems((prev) => (liked ? [...prev, liked] : prev));
-      setCurrentIndex((i) => i + 1);
+    const current = items[currentIndex];
+    if (current && userId) {
+      api.post("/likes/", { user_id: Number(userId), item_id: current.id }).catch(console.error);
     }
+    setCurrentIndex((prev) => prev + 1);
   };
 
-  // ------------------------ UI ------------------------
+  // Logic for the stack
+  const currentItem = items[currentIndex];
+  const nextItem = items[currentIndex + 1];
+
+  // --- Render States ---
   if (loading) {
     return (
-      <ThemedView style={styles.container}>
-        <View style={styles.endContainer}>
-          <ActivityIndicator size="large" color="#d49595" />
-          <ThemedText style={{ marginTop: 16, color: "#545f71" }}>
-            Loading items...
-          </ThemedText>
-        </View>
+      <ThemedView style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#000" />
+        <ThemedText style={styles.loadingText}>Curating your style...</ThemedText>
       </ThemedView>
     );
   }
 
-  if (items.length === 0 || currentIndex >= items.length) {
+  if (!currentItem) {
     return (
-      <ThemedView style={styles.container}>
-        <View style={styles.endContainer}>
-          <ThemedText type="title" style={{ color: "#000" }}>
-            No More Items!
+      <ThemedView style={styles.centerContainer}>
+        <View style={styles.emptyStateContent}>
+          <IconSymbol name="checkmark.circle" size={60} color="#000" />
+          <ThemedText type="title" style={styles.emptyTitle}>
+            You're all caught up!
           </ThemedText>
-          <ThemedText style={styles.endSubtitle}>
-            You've seen all available items
+          <ThemedText style={styles.emptySubtitle}>
+            Check back later for new styles or update your filters.
           </ThemedText>
           <TouchableOpacity style={styles.resetButton} onPress={fetchItems}>
-            <ThemedText style={styles.resetButtonText}>Start Over</ThemedText>
+            <ThemedText style={styles.resetButtonText}>REFRESH FEED</ThemedText>
           </TouchableOpacity>
         </View>
       </ThemedView>
     );
   }
 
-  const current = items[currentIndex];
-  const next = currentIndex + 1 < items.length ? items[currentIndex + 1] : null;
-
   return (
     <ThemedView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
+      
       {/* HEADER */}
       <View style={styles.header}>
         <TouchableOpacity
-          style={styles.headerButton}
+          style={styles.iconButton}
           onPress={() => router.replace("/(auth)/welcome")}
         >
-          <IconSymbol name="chevron.left" size={24} color="#000" />
+          <IconSymbol name="chevron.left" size={24} color="#1a1a1a" />
         </TouchableOpacity>
 
         <ThemedText type="title" style={styles.headerTitle}>
@@ -240,21 +197,20 @@ export default function SwipeScreen() {
         </ThemedText>
 
         <TouchableOpacity
-          style={styles.headerButton}
+          style={styles.iconButton}
           onPress={() => {
-            setPendingSelection(selectedCategories); // preload previous selection
+            setPendingSelection(selectedCategories);
             setIsDropdownOpen(true);
           }}
         >
-          <IconSymbol
-            name="line.3.horizontal.decrease"
-            size={24}
-            color="#000"
-          />
+          <View>
+            <IconSymbol name="line.3.horizontal.decrease" size={24} color="#1a1a1a" />
+            {selectedCategories.length > 0 && <View style={styles.filterBadge} />}
+          </View>
         </TouchableOpacity>
       </View>
 
-      {/* MULTI-SELECT FILTER DROPDOWN */}
+      {/* FILTER DROPDOWN */}
       <FilterDropdown
         categories={categories}
         selectedCategories={pendingSelection}
@@ -269,118 +225,124 @@ export default function SwipeScreen() {
       />
 
       {/* CARD STACK */}
-      <View style={styles.cardContainer}>
-        {next && (
+      <View style={styles.cardStack}>
+        {/* Render Next Card (Bottom Layer) */}
+        {nextItem && (
           <ItemCard
-            key={`next-${next.id}`}
-            item={next}
+            key={`next-${nextItem.id}`}
+            item={nextItem}
             isTop={false}
             onSwipeLeft={() => {}}
             onSwipeRight={() => {}}
           />
         )}
+        
+        {/* Render Current Card (Top Layer) */}
         <ItemCard
-          key={`current-${current.id}`}
-          item={current}
+          key={`current-${currentItem.id}`}
+          item={currentItem}
           isTop={true}
           onSwipeLeft={handleSwipeLeft}
           onSwipeRight={handleSwipeRight}
         />
       </View>
+      
+      {/* NOTE: Buttons removed from here. 
+        They are now integrated inside the ItemCard component 
+        for a cleaner UI and better context.
+      */}
 
-      {/* FOOTER ACTIONS */}
-      <View style={styles.buttonsContainer}>
-        <TouchableOpacity style={[styles.actionButton, styles.smallButton]}>
-          <IconSymbol name="arrow.counterclockwise" size={20} color="#bac0ca" />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.actionButton, styles.mainButton, styles.dislikeButton]}
-          onPress={handleSwipeLeft}
-        >
-          <IconSymbol name="xmark" size={32} color="#545f71" />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.actionButton, styles.mainButton, styles.likeButton]}
-          onPress={handleSwipeRight}
-        >
-          <IconSymbol name="heart.fill" size={32} color="#d49595" />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={[styles.actionButton, styles.smallButton]}>
-          <IconSymbol name="bag" size={20} color="#bac0ca" />
-        </TouchableOpacity>
-      </View>
     </ThemedView>
   );
 }
 
-// --- Styles unchanged ---
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#ffffff", paddingTop: 60 },
+  container: {
+    flex: 1,
+    backgroundColor: "#fff", // Clean white background
+    paddingTop: 60, // Adjust for status bar
+  },
+  centerContainer: {
+    flex: 1,
+    backgroundColor: "#fff",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  
+  // Header
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 20,
-    marginBottom: 20,
-    height: 44,
-  },
-  headerButton: {
-    width: 44,
-    height: 44,
-    justifyContent: "center",
-    alignItems: "center",
+    paddingHorizontal: 24,
+    height: 50,
+    zIndex: 10,
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: "600",
-    color: "#000000",
+    fontSize: 20,
+    fontWeight: "700",
     letterSpacing: 0.5,
   },
-  cardContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
-  buttonsContainer: {
-    flexDirection: "row",
+  iconButton: {
+    width: 40,
+    height: 40,
     justifyContent: "center",
     alignItems: "center",
-    gap: 16,
-    paddingBottom: 40,
+    backgroundColor: '#f7f7f7',
+    borderRadius: 20,
+  },
+  filterBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#d49595',
+  },
+
+  // Main Stack Area
+  cardStack: {
+    flex: 1,
+    justifyContent: "center", 
+    alignItems: "center",
+    marginTop: 20, // Add some breathing room from header
+    marginBottom: 40, // Space at bottom
+  },
+
+  // Loading & Empty States
+  loadingText: {
+    marginTop: 16,
+    color: "#666",
+    fontSize: 14,
+    letterSpacing: 0.5,
+  },
+  emptyStateContent: {
+    alignItems: 'center',
     paddingHorizontal: 40,
   },
-  actionButton: {
-    backgroundColor: "#ffffff",
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+  emptyTitle: {
+    marginTop: 24,
+    fontSize: 22,
+    textAlign: 'center',
   },
-  smallButton: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    borderWidth: 1,
-    borderColor: "#eef1f4",
+  emptySubtitle: {
+    marginTop: 8,
+    textAlign: 'center',
+    color: '#666',
+    lineHeight: 22,
   },
-  mainButton: { width: 64, height: 64, borderRadius: 32 },
-  dislikeButton: { borderWidth: 2, borderColor: "#545f71" },
-  likeButton: { borderWidth: 2, borderColor: "#d49595" },
-  endContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  endSubtitle: { fontSize: 16, textAlign: "center", color: "#545f71" },
   resetButton: {
-    backgroundColor: "#d49595",
+    marginTop: 32,
+    backgroundColor: "#1a1a1a",
     paddingHorizontal: 32,
     paddingVertical: 16,
-    borderRadius: 24,
-    marginTop: 24,
+    borderRadius: 12,
   },
-  resetButtonText: { color: "#ffffff", fontSize: 16, fontWeight: "600" },
+  resetButtonText: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "700",
+    letterSpacing: 1,
+  },
 });

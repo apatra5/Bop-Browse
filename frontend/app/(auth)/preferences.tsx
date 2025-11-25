@@ -6,15 +6,23 @@ import {
   FlatList,
   Dimensions,
   ActivityIndicator,
-  SafeAreaView,
   StatusBar
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
 import { PreferenceCard } from '@/components/preference-card';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const IMAGE_BASE_URL = 'https://m.media-amazon.com/images/G/01/Shopbop/p';
+const { width } = Dimensions.get('window');
+
+// --- Layout Constants ---
+const SCREEN_PADDING = 16;
+const GAP = 12;
+const NUM_COLUMNS = 2;
+const AVAILABLE_WIDTH = width - (SCREEN_PADDING * 2) - GAP;
+const ITEM_WIDTH = Math.floor(AVAILABLE_WIDTH / NUM_COLUMNS);
 
 interface ProductItem {
   id: string;
@@ -25,6 +33,8 @@ interface ProductItem {
 
 export default function PreferencesScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  
   const [items, setItems] = useState<ProductItem[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -35,6 +45,7 @@ export default function PreferencesScreen() {
 
   const fetchItems = async () => {
     try {
+      // Using generic mock feed or your endpoint
       const res = await fetch('http://0.0.0.0:8000/items/feed?offset=0&limit=20');
       const data: ProductItem[] = await res.json();
       setItems(Array.isArray(data) ? data : []);
@@ -60,65 +71,80 @@ export default function PreferencesScreen() {
     const isSelected = selected.has(item.id);
 
     return (
-      <View style={styles.cardWrapper}>
+      <View style={{ width: ITEM_WIDTH, marginBottom: 24 }}>
         <PreferenceCard
           imageUrl={imageUrl}
           selected={isSelected}
           onToggle={() => toggleSelect(item.id)}
+          width={ITEM_WIDTH}
+          height={Math.floor(ITEM_WIDTH * 1.5)} // Consistent 2:3 ratio
         />
+        {/* Simple Label below card */}
+        <ThemedText 
+          style={[styles.itemLabel, isSelected && styles.itemLabelSelected]} 
+          numberOfLines={1}
+        >
+          {isSelected ? 'SELECTED' : item.name}
+        </ThemedText>
       </View>
     );
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="dark-content" />
       <Stack.Screen options={{ headerShown: false }} />
 
-      <SafeAreaView style={styles.safeAreaTop}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton} hitSlop={20}>
-            <Ionicons name="arrow-back" size={24} color="#333" />
-          </TouchableOpacity>
-          <View>
-            <ThemedText style={styles.title}>Preferences</ThemedText>
-            <ThemedText style={styles.subtitle}>
-              Select styles you love
-            </ThemedText>
-          </View>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity 
+          onPress={() => router.back()} 
+          style={styles.iconBtn} 
+          hitSlop={20}
+        >
+          <IconSymbol name="chevron.left" size={24} color="#000" />
+        </TouchableOpacity>
+        
+        <View style={styles.headerCenter}>
+          <ThemedText style={styles.title}>STYLE QUIZ</ThemedText>
+          <ThemedText style={styles.subtitle}>
+            Select at least 3 items
+          </ThemedText>
         </View>
-      </SafeAreaView>
+
+        <View style={styles.iconBtn} /> 
+      </View>
 
       {loading ? (
         <View style={styles.centerLoading}>
-          <ActivityIndicator size="large" color="#d49595" />
+          <ActivityIndicator size="large" color="#000" />
         </View>
       ) : (
         <FlatList
           data={items}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          numColumns={2}
+          numColumns={NUM_COLUMNS}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
+          columnWrapperStyle={{ justifyContent: 'space-between' }}
         />
       )}
 
-      {/* Footer */}
-      <View style={styles.footerContainer}>
+      {/* Floating Footer */}
+      <View style={[styles.footerContainer, { paddingBottom: insets.bottom + 10 }]}>
         <TouchableOpacity
           style={[
             styles.continueButton,
-            selected.size === 0 && styles.continueButtonDisabled
+            selected.size < 3 && styles.continueButtonDisabled
           ]}
           onPress={handleContinue}
-          activeOpacity={0.85}
-          disabled={selected.size === 0}
+          activeOpacity={0.9}
+          disabled={selected.size < 3}
         >
           <ThemedText style={styles.continueText}>
-            {selected.size > 0 ? `Continue (${selected.size})` : 'Select styles'}
+            {selected.size > 0 ? `CONTINUE (${selected.size})` : 'SELECT ITEMS'}
           </ThemedText>
-          <Ionicons name="arrow-forward" size={20} color="#fff" style={{ marginLeft: 8 }} />
         </TouchableOpacity>
       </View>
     </View>
@@ -128,50 +154,55 @@ export default function PreferencesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fafafa',
-  },
-
-  safeAreaTop: {
     backgroundColor: '#fff',
-    paddingTop: 6,
   },
 
+  // Header
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 22,
-    paddingBottom: 12,
-    paddingTop: 8,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    height: 60,
+    marginBottom: 10,
   },
-
-  backButton: {
-    marginRight: 18,
-    padding: 4,
+  iconBtn: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-
+  headerCenter: {
+    alignItems: 'center',
+  },
   title: {
-    fontSize: 26,
+    fontSize: 16,
     fontWeight: '700',
-    color: '#111',
+    letterSpacing: 1.2,
+    color: '#000',
   },
-
   subtitle: {
-    fontSize: 15,
-    color: '#777',
-    marginTop: 2,
+    fontSize: 12,
+    color: '#888',
+    marginTop: 4,
+    letterSpacing: 0.5,
   },
 
+  // Grid
   listContent: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 140,
+    paddingHorizontal: SCREEN_PADDING,
+    paddingBottom: 120, // Space for footer
   },
-
-  /* 🎯 FIXED PERFECT GRID SPACING */
-  cardWrapper: {
-    flex: 1,
-    marginBottom: 20,
-    marginHorizontal: 6,
+  itemLabel: {
+    marginTop: 8,
+    fontSize: 11,
+    color: '#999',
+    textAlign: 'center',
+    letterSpacing: 0.5,
+  },
+  itemLabelSelected: {
+    color: '#000',
+    fontWeight: '600',
   },
 
   centerLoading: {
@@ -180,50 +211,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  /* Footer */
+  // Footer
   footerContainer: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-
-    padding: 20,
-    paddingBottom: 34,
-    backgroundColor: '#ffffffee',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    backgroundColor: 'rgba(255,255,255,0.95)',
     borderTopWidth: 1,
-    borderTopColor: '#eaeaea',
-
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: -2 },
+    borderTopColor: '#f0f0f0',
   },
 
   continueButton: {
     width: '100%',
-    height: 56,
-    borderRadius: 20,
-    backgroundColor: '#d58c8c',
-
+    height: 52,
+    borderRadius: 8, // Sleek, less round
+    backgroundColor: '#000', // Editorial Black
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-
-    shadowColor: '#d58c8c',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    elevation: 4,
   },
 
   continueButtonDisabled: {
-    backgroundColor: '#d0d0d0',
-    shadowOpacity: 0,
+    backgroundColor: '#e0e0e0',
   },
 
   continueText: {
     color: '#fff',
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
   },
 });
