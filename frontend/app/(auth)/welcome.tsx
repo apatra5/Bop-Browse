@@ -96,7 +96,7 @@ export default function Welcome() {
 
   const startBrowsing = () => {
     // route to the main tabs index (the swipe/index screen)
-    router.replace('/(tabs)');
+    router.push('./preferences');
   };
 
   return (

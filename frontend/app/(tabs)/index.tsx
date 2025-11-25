@@ -4,6 +4,7 @@ import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Item } from "@/data/mock-items";
 import { useState, useEffect } from "react";
+import { useRouter } from 'expo-router';
 import {
   StyleSheet,
   TouchableOpacity,
@@ -16,6 +17,7 @@ import { FilterDropdown } from "@/components/filter-dropdown";
 
 export default function SwipeScreen() {
   const { userId } = useAuth();
+  const router = useRouter();
   const [items, setItems] = useState<Item[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [likedItems, setLikedItems] = useState<Item[]>([]);
@@ -211,13 +213,8 @@ export default function SwipeScreen() {
           <ThemedText style={styles.endSubtitle}>
             You've seen all available items
           </ThemedText>
-          <TouchableOpacity
-            style={styles.resetButton}
-            onPress={fetchItems}
-          >
-            <ThemedText style={styles.resetButtonText}>
-              Start Over
-            </ThemedText>
+          <TouchableOpacity style={styles.resetButton} onPress={fetchItems}>
+            <ThemedText style={styles.resetButtonText}>Start Over</ThemedText>
           </TouchableOpacity>
         </View>
       </ThemedView>
@@ -225,14 +222,16 @@ export default function SwipeScreen() {
   }
 
   const current = items[currentIndex];
-  const next =
-    currentIndex + 1 < items.length ? items[currentIndex + 1] : null;
+  const next = currentIndex + 1 < items.length ? items[currentIndex + 1] : null;
 
   return (
     <ThemedView style={styles.container}>
       {/* HEADER */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.headerButton}>
+        <TouchableOpacity
+          style={styles.headerButton}
+          onPress={() => router.replace("/(auth)/welcome")}
+        >
           <IconSymbol name="chevron.left" size={24} color="#000" />
         </TouchableOpacity>
 
@@ -291,14 +290,8 @@ export default function SwipeScreen() {
 
       {/* FOOTER ACTIONS */}
       <View style={styles.buttonsContainer}>
-        <TouchableOpacity
-          style={[styles.actionButton, styles.smallButton]}
-        >
-          <IconSymbol
-            name="arrow.counterclockwise"
-            size={20}
-            color="#bac0ca"
-          />
+        <TouchableOpacity style={[styles.actionButton, styles.smallButton]}>
+          <IconSymbol name="arrow.counterclockwise" size={20} color="#bac0ca" />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -315,9 +308,7 @@ export default function SwipeScreen() {
           <IconSymbol name="heart.fill" size={32} color="#d49595" />
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.actionButton, styles.smallButton]}
-        >
+        <TouchableOpacity style={[styles.actionButton, styles.smallButton]}>
           <IconSymbol name="bag" size={20} color="#bac0ca" />
         </TouchableOpacity>
       </View>
