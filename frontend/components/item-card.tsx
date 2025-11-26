@@ -28,6 +28,8 @@ interface ItemCardProps {
   onSwipeLeft: () => void;
   onSwipeRight: () => void;
   isTop: boolean;
+  onRewind?: () => void;
+  canRewind?: boolean;
 }
 
 export function ItemCard({
@@ -35,6 +37,8 @@ export function ItemCard({
   onSwipeLeft,
   onSwipeRight,
   isTop,
+  onRewind,
+  canRewind = false,
 }: ItemCardProps) {
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
@@ -43,7 +47,6 @@ export function ItemCard({
 
   const [showDetails, setShowDetails] = useState(false);
 
-  // --- Programmatic Swipe Logic ---
   const triggerSwipe = (direction: 'left' | 'right') => {
     const targetX = direction === 'right' ? SCREEN_WIDTH * 1.5 : -SCREEN_WIDTH * 1.5;
     
@@ -53,11 +56,9 @@ export function ItemCard({
       }
     });
     opacity.value = withTiming(0, { duration: 300 });
-    // Add slight rotation on trigger for visual flair
     rotation.value = withTiming(direction === 'right' ? 10 : -10, { duration: 300 });
   };
 
-  // --- Gesture Handler (Fixed Shaking) ---
   const springConfig = {
     damping: 20,       
     stiffness: 150,    
@@ -69,6 +70,7 @@ export function ItemCard({
 
   const panGesture = Gesture.Pan()
     .enabled(isTop)
+    .activeOffsetX([-10, 10]) 
     .onUpdate((event) => {
       translateX.value = event.translationX;
       translateY.value = event.translationY;
@@ -77,7 +79,6 @@ export function ItemCard({
     })
     .onEnd((event) => {
       if (Math.abs(event.translationX) > SWIPE_THRESHOLD) {
-        // SWIPE OUT
         const direction = event.translationX > 0 ? 1 : -1;
         translateX.value = withTiming(
           direction * SCREEN_WIDTH * 1.5,
@@ -90,7 +91,6 @@ export function ItemCard({
         );
         opacity.value = withTiming(0, { duration: 300 });
       } else {
-        // SPRING BACK
         translateX.value = withSpring(0, springConfig);
         translateY.value = withSpring(0, springConfig);
         rotation.value = withSpring(0, springConfig);
@@ -107,8 +107,6 @@ export function ItemCard({
     opacity: opacity.value,
   }));
 
-  // --- NEW: Corner Stamp Animations ---
-  // We use fixed rotation for the stamps so they look like stickers placed on the corners
   const likeStampStyle = useAnimatedStyle(() => ({
     opacity: interpolate(translateX.value, [20, SWIPE_THRESHOLD], [0, 1], Extrapolation.CLAMP),
   }));
@@ -134,23 +132,16 @@ export function ItemCard({
           
           <CarouselImages item={item} />
 
-          {/* --- NEW: Corner Stamps (Replaces center icons) --- */}
+          {/* --- STAMPS --- */}
           <View style={styles.stampsLayer} pointerEvents="none">
-            
-            {/* Top Left NOPE */}
             <Animated.View style={[styles.stampContainer, styles.nopeStamp, nopeStampStyle]}>
               <ThemedText style={[styles.stampText, styles.nopeText]}>NOPE</ThemedText>
             </Animated.View>
-
-             {/* Top Right LIKE */}
             <Animated.View style={[styles.stampContainer, styles.likeStamp, likeStampStyle]}>
                <ThemedText style={[styles.stampText, styles.likeText]}>LIKE</ThemedText>
             </Animated.View>
-
           </View>
 
-
-          {/* Info Gradient Overlay */}
           <LinearGradient
             colors={["transparent", "rgba(0,0,0,0.2)", "rgba(0,0,0,0.9)"]}
             locations={[0, 0.5, 1]}
@@ -159,7 +150,6 @@ export function ItemCard({
           >
             <View style={styles.contentRow}>
               
-              {/* Left Side: Text Info */}
               <View style={styles.textContainer}>
                  <ThemedText type="defaultSemiBold" style={styles.brandName}>
                   {item.brand_name.toUpperCase()}
@@ -175,36 +165,44 @@ export function ItemCard({
                 </View>
               </View>
 
-              {/* Right Side: 4 Action Buttons */}
               <View style={styles.actionCluster}>
-                {/* 1. Rewind */}
-                <TouchableOpacity style={styles.actionBtn} activeOpacity={0.7}>
-                   <IconSymbol name="arrow.counterclockwise" size={20} color="#fff" />
+                <TouchableOpacity 
+                  style={[styles.actionBtn, !canRewind && styles.actionBtnDisabled]} 
+                  onPress={onRewind}
+                  disabled={!canRewind}
+                  activeOpacity={0.7}
+                  hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
+                >
+                   <IconSymbol 
+                     name="arrow.counterclockwise" 
+                     size={20} 
+                     color={canRewind ? "#fff" : "rgba(255,255,255,0.3)"} 
+                   />
                 </TouchableOpacity>
 
-                {/* 2. Dislike */}
                 <TouchableOpacity 
                   style={[styles.actionBtn, styles.actionBtnNope]} 
                   onPress={() => triggerSwipe('left')}
                   activeOpacity={0.7}
+                  hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
                 >
                    <IconSymbol name="xmark" size={22} color="#ff6b6b" />
                 </TouchableOpacity>
 
-                {/* 3. Like */}
                 <TouchableOpacity 
                   style={[styles.actionBtn, styles.actionBtnLike]}
                   onPress={() => triggerSwipe('right')}
                   activeOpacity={0.7}
+                  hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
                 >
                    <IconSymbol name="heart.fill" size={22} color="#4cd964" />
                 </TouchableOpacity>
 
-                {/* 4. Details */}
                 <TouchableOpacity 
                   style={styles.actionBtn} 
                   onPress={() => setShowDetails(true)}
                   activeOpacity={0.7}
+                  hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
                 >
                    <IconSymbol name="ellipsis" size={20} color="#fff" />
                 </TouchableOpacity>
@@ -221,10 +219,6 @@ export function ItemCard({
   );
 }
 
-// =======================================================
-//            CAROUSEL (Unchanged)
-// =======================================================
-// ... (The CarouselImages component remains exactly the same as before)
 function CarouselImages({ item }: { item: Item }) {
   const PREFIX = "https://m.media-amazon.com/images/G/01/Shopbop/p";
   const scrollRef = useRef<ScrollView | null>(null);
@@ -339,7 +333,6 @@ function CarouselImages({ item }: { item: Item }) {
 }
 
 const styles = StyleSheet.create({
-  // ... (previous styles remain the same)
   card: {
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
@@ -351,7 +344,7 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 5,
     position: "absolute",
-    overflow: "hidden", // This cuts off items near the edge, so we need to move stamps inward
+    overflow: "hidden",
   },
   cardBelow: {
     opacity: 1,
@@ -366,31 +359,31 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
-
-  // --- FIXED STAMP STYLES ---
+  
+  // --- UPDATED STAMP STYLES TO PREVENT CROPPING ---
   stampsLayer: {
     ...StyleSheet.absoluteFillObject,
-    zIndex: 10,
+    zIndex: 100,
   },
   stampContainer: {
     position: 'absolute',
-    top: 40, // Moved down from 30 to avoid corner clipping
-    paddingHorizontal: 12, // More horizontal breathing room
-    paddingVertical: 8,    // More vertical breathing room
-    borderWidth: 4,        // Thicker, bolder border
+    top: 60, // Moved further down to clear corners
+    paddingHorizontal: 18, // More horizontal padding
+    paddingVertical: 8,
+    borderWidth: 4, // Thicker border for clarity
     borderRadius: 8,
-    backgroundColor: 'rgba(0,0,0,0.05)', // Very subtle tint
+    backgroundColor: 'rgba(0,0,0,0.05)', // Very subtle bg
   },
   stampText: {
     fontSize: 32,
-    fontWeight: '800',
+    fontWeight: '900',
     letterSpacing: 2,
     textTransform: 'uppercase',
     textAlign: 'center',
-    lineHeight: 34, // Ensures top/bottom of text isn't clipped
+    lineHeight: 42, // Increased line height to prevent vertical clipping
   },
   nopeStamp: {
-    left: 24, // Moved inward from 20
+    left: 40, // Moved inward from edge
     borderColor: '#ff4b4b',
     transform: [{ rotate: '15deg' }],
   },
@@ -398,7 +391,7 @@ const styles = StyleSheet.create({
     color: '#ff4b4b',
   },
   likeStamp: {
-    right: 24, // Moved inward from 20
+    right: 40, // Moved inward from edge
     borderColor: '#4cd964',
     transform: [{ rotate: '-15deg' }],
   },
@@ -406,7 +399,6 @@ const styles = StyleSheet.create({
     color: '#4cd964',
   },
 
-  // ... (rest of styles remain exactly the same)
   gradient: {
     position: "absolute",
     bottom: 0,
@@ -464,6 +456,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  actionBtnDisabled: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
   actionBtnNope: {
     backgroundColor: 'rgba(255, 75, 75, 0.15)',
     borderColor: 'rgba(255, 75, 75, 0.3)',
@@ -477,7 +473,7 @@ const styles = StyleSheet.create({
   },
   carouselDots: {
     position: "absolute",
-    top: 20,
+    top: 20, 
     left: 0,
     right: 0,
     flexDirection: "row",

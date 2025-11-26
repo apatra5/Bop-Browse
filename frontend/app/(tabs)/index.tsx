@@ -85,7 +85,7 @@ export default function SwipeScreen() {
       setIsFetchingMore(true);
       const response = await api.get("/items/feed");
       const newItems = mapResponseToItems(response.data);
-      setItems((prev) => [...prev, ...newItems]); // Append to end
+      setItems((prev) => [...prev, ...newItems]);
     } catch(e) {
       console.error(e);
     } finally {
@@ -97,7 +97,6 @@ export default function SwipeScreen() {
   const mapResponseToItems = (data: any[]): Item[] => {
     return data.map((item: any) => {
       const suffix = item.image_url_suffix;
-      // If suffix exists, construct URL, otherwise fallback to empty or raw image_url
       const fullImageUrl = suffix
           ? `https://m.media-amazon.com/images/G/01/Shopbop/p${suffix}`
           : item.image_url || "";
@@ -115,15 +114,13 @@ export default function SwipeScreen() {
         stretch: item.stretch ?? null,
         product_images: Array.isArray(item.product_images) ? item.product_images : [],
         categories: Array.isArray(item.categories) ? item.categories : [],
-        // Fallbacks
         brand_code: "", 
       };
     });
   };
 
-  // Pagination trigger
   useEffect(() => {
-    const threshold = items.length - 4; // Fetch when 4 items left
+    const threshold = items.length - 4;
     if (items.length > 0 && currentIndex >= threshold && !loading && !isFetchingMore) {
       fetchMoreItems();
     }
@@ -144,6 +141,13 @@ export default function SwipeScreen() {
       api.post("/likes/", { user_id: Number(userId), item_id: current.id }).catch(console.error);
     }
     setCurrentIndex((prev) => prev + 1);
+  };
+
+  // --- NEW: Rewind Handler ---
+  const handleRewind = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex((prev) => prev - 1);
+    }
   };
 
   // Logic for the stack
@@ -226,7 +230,6 @@ export default function SwipeScreen() {
 
       {/* CARD STACK */}
       <View style={styles.cardStack}>
-        {/* Render Next Card (Bottom Layer) */}
         {nextItem && (
           <ItemCard
             key={`next-${nextItem.id}`}
@@ -237,21 +240,17 @@ export default function SwipeScreen() {
           />
         )}
         
-        {/* Render Current Card (Top Layer) */}
         <ItemCard
           key={`current-${currentItem.id}`}
           item={currentItem}
           isTop={true}
           onSwipeLeft={handleSwipeLeft}
           onSwipeRight={handleSwipeRight}
+          // --- PASSED REWIND PROPS ---
+          onRewind={handleRewind}
+          canRewind={currentIndex > 0}
         />
       </View>
-      
-      {/* NOTE: Buttons removed from here. 
-        They are now integrated inside the ItemCard component 
-        for a cleaner UI and better context.
-      */}
-
     </ThemedView>
   );
 }
@@ -259,8 +258,8 @@ export default function SwipeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff", // Clean white background
-    paddingTop: 60, // Adjust for status bar
+    backgroundColor: "#fff",
+    paddingTop: 60,
   },
   centerContainer: {
     flex: 1,
@@ -268,8 +267,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  
-  // Header
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -300,17 +297,13 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: '#d49595',
   },
-
-  // Main Stack Area
   cardStack: {
     flex: 1,
     justifyContent: "center", 
     alignItems: "center",
-    marginTop: 20, // Add some breathing room from header
-    marginBottom: 40, // Space at bottom
+    marginTop: 20,
+    marginBottom: 40,
   },
-
-  // Loading & Empty States
   loadingText: {
     marginTop: 16,
     color: "#666",
