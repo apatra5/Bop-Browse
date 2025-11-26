@@ -142,7 +142,6 @@ export default function ClosetScreen() {
     if (!userId) return;
     setRemoving((prev) => ({ ...prev, [itemId]: true }));
     
-    // Optimistic Update
     const prevItems = items;
     setItems((curr) => curr.filter((it) => it.id !== itemId));
 
@@ -156,7 +155,7 @@ export default function ClosetScreen() {
       });
     } catch (e) {
       console.error('Failed to unlike item', e);
-      setItems(prevItems); // Revert
+      setItems(prevItems); 
     } finally {
       setRemoving((prev) => {
         const copy = { ...prev };
@@ -176,7 +175,6 @@ export default function ClosetScreen() {
     setTimeout(() => setSelectedItem(null), 300);
   }, []);
 
-  // Filter Logic
   const isServerFiltered =
     selectedCategory !== 'All Items' &&
     selectedCategory !== 'Outfit' &&
@@ -212,7 +210,6 @@ export default function ClosetScreen() {
           style={StyleSheet.absoluteFill}
         />
 
-        {/* Remove Button */}
         <TouchableOpacity
           style={styles.removeButton}
           onPress={(e) => {
@@ -249,14 +246,24 @@ export default function ClosetScreen() {
     <ThemedView style={styles.container}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       
-      {/* Header (Centered, No Back Button) */}
+      {/* HEADER: Matches SwipeScreen Exactly */}
       <View style={styles.header}>
-        <View style={styles.headerCenter}>
-          <ThemedText type="subtitle" style={styles.headerTitle}>YOUR CLOSET</ThemedText>
-          <ThemedText style={styles.itemCount}>
-            {loading ? 'Updating...' : `${visibleItems.length} ITEMS`}
-          </ThemedText>
-        </View>
+        {/* 40px Spacer (Matches SwipeScreen Left Button) */}
+        <View style={styles.headerSpacer} />
+        
+        <ThemedText type="title" style={styles.headerTitle}>
+          Your Closet
+        </ThemedText>
+
+        {/* 40px Spacer (Matches SwipeScreen Right Button) */}
+        <View style={styles.headerSpacer} />
+      </View>
+
+      {/* Sub-header: Item Count (Moved out to preserve Title alignment) */}
+      <View style={styles.subHeader}>
+        <ThemedText style={styles.itemCount}>
+          {loading ? 'Updating...' : `${visibleItems.length} ITEMS SAVED`}
+        </ThemedText>
       </View>
 
       {/* Categories */}
@@ -323,37 +330,46 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingTop: 50,
+    paddingTop: 60, // Matches SwipeScreen container paddingTop
   },
   
-  // Header
+  // Header - Structural Match to SwipeScreen
   header: {
+    flexDirection: 'row', // Row layout
     alignItems: 'center',
-    justifyContent: 'center', // Centered alignment
-    paddingHorizontal: 20,
-    marginBottom: 16,
-    height: 50,
+    justifyContent: 'space-between', // Space between 3 elements
+    paddingHorizontal: 24,
+    height: 50, 
+    zIndex: 10,
   },
-  headerCenter: {
-    alignItems: 'center',
+  headerSpacer: {
+    width: 40, // Width of icon buttons in SwipeScreen
   },
   headerTitle: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: '700',
-    letterSpacing: 1.2,
+    letterSpacing: 0.5,
     color: '#000',
+    // No margin bottom here to prevent shifting
+  },
+  
+  // Sub-Header for Count
+  subHeader: {
+    alignItems: 'center',
+    marginBottom: 12,
+    marginTop: -4, // Pulls it up slightly to sit snug under title
   },
   itemCount: {
     fontSize: 11,
     color: '#888',
-    letterSpacing: 0.5,
-    marginTop: 2,
+    letterSpacing: 1,
+    fontWeight: '600',
   },
 
   // Categories
   categoryContainer: {
     height: 50,
-    marginBottom: 10,
+    marginBottom: 6,
   },
   categoryScroll: {
     paddingHorizontal: SCREEN_PADDING,
@@ -414,8 +430,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#f0f0f0',
   },
-  
-  // Remove Button
   removeButton: {
     position: 'absolute',
     top: 8,
