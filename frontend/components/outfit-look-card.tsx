@@ -7,15 +7,20 @@ import {
   StyleSheet,
   Dimensions,
   ScrollView,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
+import api from '@/api/axios'; 
+import { useAuth } from '@/contexts/AuthContext'; 
+import { useRouter } from 'expo-router';
 
 interface OutfitLookCardProps {
   outfitData: any;
   lookTitle?: string;
   imageBaseUrl?: string;
-  onShopClick?: (outfit: any) => void; // Triggers when clicking "Shop Look" (no selection)
-  onItemClick?: (item: any) => void;   // Triggers when clicking an image
-  onAddToCloset?: (items: any[]) => void; // Triggers for "Add Outfit" or "Add (X) Items"
+  onAddToClosetSuccess?: () => void;
+  onShopClick?: (outfit: any) => void; 
+  onItemClick?: (item: any) => void;
 }
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -26,41 +31,25 @@ export const OutfitLookCard: React.FC<OutfitLookCardProps> = ({
   imageBaseUrl = "https://m.media-amazon.com/images/G/01/Shopbop/p",
   onShopClick,
   onItemClick,
-  onAddToCloset
+  onAddToClosetSuccess
 }) => {
+  const { userId } = useAuth();
+  const router = useRouter();
+
   if (!outfitData) return null;
 
   const { primaryImage, styleColors } = outfitData;
   const validStyleColors = styleColors?.filter((item: any) => item?.image?.src) || [];
   const itemCount = validStyleColors.length;
 
-  // --- Selection State ---
   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
+  const [isAdding, setIsAdding] = useState(false);
 
   const toggleSelection = (index: number) => {
     const newSet = new Set(selectedIndices);
     if (newSet.has(index)) newSet.delete(index);
     else newSet.add(index);
     setSelectedIndices(newSet);
-  };
-
-  // --- Action Handlers ---
-  
-  // 1. Add Entire Outfit (Left Button)
-  const handleAddAll = () => {
-    onAddToCloset?.(validStyleColors);
-  };
-
-  // 2. Add Selected OR Shop Look (Right Button)
-  const handleRightAction = () => {
-    if (selectedIndices.size > 0) {
-      // Add specific items
-      const selectedItems = validStyleColors.filter((_: any, idx: number) => selectedIndices.has(idx));
-      onAddToCloset?.(selectedItems);
-    } else {
-      // Fallback: Shop/View the whole look
-      onShopClick?.(outfitData);
-    }
   };
 
   const getImageUrl = (src?: string): string | undefined => {
@@ -70,6 +59,67 @@ export const OutfitLookCard: React.FC<OutfitLookCardProps> = ({
 
   const primaryImageUrl = getImageUrl(primaryImage?.src);
   if (!primaryImageUrl && validStyleColors.length === 0) return null;
+
+  // --- API HANDLER ---
+  const saveItemsToCloset = async (itemsToSave: any[]) => {
+    if (!userId) {
+      Alert.alert("Sign In Required", "Please sign in to save items to your closet.");
+      return;
+    }
+
+    setIsAdding(true);
+    try {
+      const apiCalls = itemsToSave.map((item) => {
+        
+        // --- CORRECTED ID EXTRACTION: ONLY productSin ---
+        const rawId = item.product?.productSin || item.id; // Fallback to .id if flat object
+
+        if (!rawId) {
+          console.warn("Skipping item, no productSin found:", item);
+          return Promise.resolve(); 
+        }
+
+        const payload = {
+          user_id: Number(userId),
+          item_id: String(rawId) 
+        };
+        
+        return api.post('/likes/', payload);
+      });
+
+      await Promise.all(apiCalls);
+
+      Alert.alert("Success", `Saved ${itemsToSave.length} items to your closet.`);
+      setSelectedIndices(new Set()); 
+      onAddToClosetSuccess?.();
+
+    } catch (error) {
+      console.error("Failed to save items", error);
+      Alert.alert("Error", "Could not save items. Please try again.");
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  // --- Button Actions ---
+
+  const handleAddAll = () => {
+    if (isAdding) return;
+    saveItemsToCloset(validStyleColors);
+  };
+
+  const handleRightAction = () => {
+    if (isAdding) return;
+
+    if (selectedIndices.size > 0) {
+      const selectedItems = validStyleColors.filter((_: any, idx: number) => selectedIndices.has(idx));
+      saveItemsToCloset(selectedItems);
+    } else {
+      if (onShopClick) {
+        onShopClick(outfitData);
+      }
+    }
+  };
 
   // --- Layout Constants ---
   const cardHorizontalMargin = 16 * 2;
@@ -83,7 +133,6 @@ export const OutfitLookCard: React.FC<OutfitLookCardProps> = ({
   const productTileHeight = Math.round((primaryHeight - innerGap) / 2);
   const productTileWidth = Math.round(productTileHeight * (9 / 16));
 
-  // Helper for Selection Circle
   const SelectionToggle = ({ isSelected, onPress }: { isSelected: boolean, onPress: () => void }) => (
     <TouchableOpacity
       style={[styles.selectionCircle, isSelected && styles.selectionCircleActive]}
@@ -100,7 +149,6 @@ export const OutfitLookCard: React.FC<OutfitLookCardProps> = ({
   return (
     <View style={styles.cardContainer}>
       
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>{lookTitle}</Text>
         <View style={styles.badge}>
@@ -108,7 +156,6 @@ export const OutfitLookCard: React.FC<OutfitLookCardProps> = ({
         </View>
       </View>
 
-      {/* Main Content */}
       <View style={[styles.rowWrapper, { height: primaryHeight }]}>
         {primaryImageUrl && (
           <TouchableOpacity 
@@ -172,39 +219,41 @@ export const OutfitLookCard: React.FC<OutfitLookCardProps> = ({
         </View>
       </View>
 
-      {/* FOOTER: Two Button Layout */}
       <View style={styles.footerRow}>
-        
-        {/* Left: Add Entire Outfit (Secondary Style) */}
         <TouchableOpacity
           style={[styles.buttonBase, styles.buttonSecondary]}
           onPress={handleAddAll}
           activeOpacity={0.7}
+          disabled={isAdding}
         >
-          <Text style={styles.textSecondary}>ADD OUTFIT</Text>
+          <Text style={styles.textSecondary}>
+            {isAdding && selectedIndices.size === 0 ? "SAVING..." : "ADD OUTFIT"}
+          </Text>
         </TouchableOpacity>
 
-        {/* Right: Add Selected / Shop Look (Primary Style) */}
         <TouchableOpacity
           style={[styles.buttonBase, styles.buttonPrimary]}
           onPress={handleRightAction}
           activeOpacity={0.85}
+          disabled={isAdding}
         >
-          <Text style={styles.textPrimary}>
-            {selectedIndices.size > 0 
-              ? `ADD (${selectedIndices.size}) ITEMS` 
-              : "SHOP LOOK"
-            }
-          </Text>
+          {isAdding && selectedIndices.size > 0 ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.textPrimary}>
+              {selectedIndices.size > 0 
+                ? `ADD (${selectedIndices.size}) ITEMS` 
+                : "SHOP LOOK"
+              }
+            </Text>
+          )}
         </TouchableOpacity>
-
       </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  // ... (Previous layout styles preserved) ...
   cardContainer: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -305,21 +354,18 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 12,
   },
-
-  // --- NEW FOOTER STYLES ---
   footerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12, // Space between buttons
+    gap: 12,
   },
   buttonBase: {
-    flex: 1, // Equal width
+    flex: 1,
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Primary (Black)
   buttonPrimary: {
     backgroundColor: '#000',
   },
@@ -330,7 +376,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
-  // Secondary (White with Border)
   buttonSecondary: {
     backgroundColor: '#fff',
     borderWidth: 1,
