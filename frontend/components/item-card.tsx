@@ -45,32 +45,42 @@ export function ItemCard({
   const rotation = useSharedValue(0);
   const opacity = useSharedValue(1);
 
+  // --- CAROUSEL STATE ---
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  
+  // Get image count to prevent out-of-bounds
+  const imagesCount = (item.product_images?.length || 0) > 0 
+    ? item.product_images.length 
+    : 1; // fallback if only main image exists
+
+  // Detail Animation (Fade in Brand/Price on 2nd photo)
+  const detailOpacity = useSharedValue(0);
+  useEffect(() => {
+    detailOpacity.value = withTiming(currentImageIndex > 0 ? 1 : 0, { duration: 300 });
+  }, [currentImageIndex]);
+
+  const detailAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: detailOpacity.value,
+    transform: [{ translateY: interpolate(detailOpacity.value, [0, 1], [10, 0]) }]
+  }));
+
   const [showDetails, setShowDetails] = useState(false);
 
+  // --- GESTURES ---
+
+  // 1. Pan Gesture (Swipe Card)
   const triggerSwipe = (direction: 'left' | 'right') => {
     const targetX = direction === 'right' ? SCREEN_WIDTH * 1.5 : -SCREEN_WIDTH * 1.5;
-    
     translateX.value = withTiming(targetX, { duration: 400 }, (finished) => {
-      if (finished) {
-        runOnJS(direction === 'right' ? onSwipeRight : onSwipeLeft)();
-      }
+      if (finished) runOnJS(direction === 'right' ? onSwipeRight : onSwipeLeft)();
     });
     opacity.value = withTiming(0, { duration: 300 });
     rotation.value = withTiming(direction === 'right' ? 10 : -10, { duration: 300 });
   };
 
-  const springConfig = {
-    damping: 20,       
-    stiffness: 150,    
-    mass: 0.5,         
-    overshootClamping: true, 
-    restDisplacementThreshold: 0.1, 
-    restSpeedThreshold: 0.1,
-  };
-
   const panGesture = Gesture.Pan()
     .enabled(isTop)
-    .activeOffsetX([-10, 10]) 
+    .activeOffsetX([-10, 10]) // Important: Allows taps to pass through!
     .onUpdate((event) => {
       translateX.value = event.translationX;
       translateY.value = event.translationY;
@@ -81,22 +91,37 @@ export function ItemCard({
       if (Math.abs(event.translationX) > SWIPE_THRESHOLD) {
         const direction = event.translationX > 0 ? 1 : -1;
         translateX.value = withTiming(
-          direction * SCREEN_WIDTH * 1.5,
-          { duration: 400 },
-          (finished) => {
-            if (finished) {
-              runOnJS(event.translationX > 0 ? onSwipeRight : onSwipeLeft)();
-            }
-          }
+          direction * SCREEN_WIDTH * 1.5, 
+          { duration: 400 }, 
+          (finished) => { if (finished) runOnJS(event.translationX > 0 ? onSwipeRight : onSwipeLeft)(); }
         );
         opacity.value = withTiming(0, { duration: 300 });
       } else {
-        translateX.value = withSpring(0, springConfig);
-        translateY.value = withSpring(0, springConfig);
-        rotation.value = withSpring(0, springConfig);
-        opacity.value = withSpring(1, springConfig);
+        translateX.value = withSpring(0, { damping: 20, stiffness: 150 });
+        translateY.value = withSpring(0, { damping: 20, stiffness: 150 });
+        rotation.value = withSpring(0);
+        opacity.value = withSpring(1);
       }
     });
+
+  // 2. Tap Gesture (Manual Carousel Navigation)
+  const tapGesture = Gesture.Tap()
+    .enabled(isTop)
+    .runOnJS(true)
+    .maxDuration(250)
+    .onEnd((e) => {
+      const isLeftTap = e.x < CARD_WIDTH / 2;
+      if (isLeftTap) {
+        // Go Prev
+        if (currentImageIndex > 0) setCurrentImageIndex(prev => prev - 1);
+      } else {
+        // Go Next (Looping)
+        setCurrentImageIndex(prev => (prev + 1) % imagesCount);
+      }
+    });
+
+  // Combine gestures: Both can be active, but Pan waits for movement.
+  const composedGesture = Gesture.Simultaneous(panGesture, tapGesture);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
@@ -110,11 +135,9 @@ export function ItemCard({
   const likeStampStyle = useAnimatedStyle(() => ({
     opacity: interpolate(translateX.value, [20, SWIPE_THRESHOLD], [0, 1], Extrapolation.CLAMP),
   }));
-
   const nopeStampStyle = useAnimatedStyle(() => ({
     opacity: interpolate(translateX.value, [-20, -SWIPE_THRESHOLD], [0, 1], Extrapolation.CLAMP),
   }));
-
 
   if (!isTop) {
     return (
@@ -127,12 +150,16 @@ export function ItemCard({
 
   return (
     <>
-      <GestureDetector gesture={panGesture}>
+      <GestureDetector gesture={composedGesture}>
         <Animated.View style={[styles.card, animatedStyle]}>
           
-          <CarouselImages item={item} />
+          {/* Controlled Carousel */}
+          <CarouselImages 
+            item={item} 
+            activeIndex={currentImageIndex} 
+          />
 
-          {/* --- STAMPS --- */}
+          {/* Stamps */}
           <View style={styles.stampsLayer} pointerEvents="none">
             <Animated.View style={[styles.stampContainer, styles.nopeStamp, nopeStampStyle]}>
               <ThemedText style={[styles.stampText, styles.nopeText]}>NOPE</ThemedText>
@@ -142,68 +169,53 @@ export function ItemCard({
             </Animated.View>
           </View>
 
+          {/* Info & Controls Overlay */}
           <LinearGradient
             colors={["transparent", "rgba(0,0,0,0.2)", "rgba(0,0,0,0.9)"]}
             locations={[0, 0.5, 1]}
             style={styles.gradient}
-            pointerEvents="box-none" 
+            pointerEvents="box-none" // Allows taps to pass through empty areas to the TapGesture
           >
-            <View style={styles.contentRow}>
+            <View style={styles.contentRow} pointerEvents="box-none">
               
-              <View style={styles.textContainer}>
-                 <ThemedText type="defaultSemiBold" style={styles.brandName}>
-                  {item.brand_name.toUpperCase()}
-                </ThemedText>
+              <View style={styles.textContainer} pointerEvents="none">
+                <Animated.View style={detailAnimatedStyle}>
+                   <ThemedText type="defaultSemiBold" style={styles.brandName}>
+                    {item.brand_name.toUpperCase()}
+                  </ThemedText>
+                </Animated.View>
+
                 <ThemedText type="title" style={styles.itemName} numberOfLines={2}>
                   {item.name}
                 </ThemedText>
                 
-                <View style={styles.metaRow}>
+                <Animated.View style={[styles.metaRow, detailAnimatedStyle]}>
                   {item.price && (
                     <ThemedText style={styles.price}>{item.price}</ThemedText>
                   )}
-                </View>
+                </Animated.View>
               </View>
 
-              <View style={styles.actionCluster}>
+              {/* Action Buttons - Must explicitly handle touches */}
+              <View style={styles.actionCluster} pointerEvents="auto">
                 <TouchableOpacity 
                   style={[styles.actionBtn, !canRewind && styles.actionBtnDisabled]} 
                   onPress={onRewind}
                   disabled={!canRewind}
                   activeOpacity={0.7}
-                  hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
                 >
-                   <IconSymbol 
-                     name="arrow.counterclockwise" 
-                     size={20} 
-                     color={canRewind ? "#fff" : "rgba(255,255,255,0.3)"} 
-                   />
+                   <IconSymbol name="arrow.counterclockwise" size={20} color={canRewind ? "#fff" : "rgba(255,255,255,0.3)"} />
                 </TouchableOpacity>
 
-                <TouchableOpacity 
-                  style={[styles.actionBtn, styles.actionBtnNope]} 
-                  onPress={() => triggerSwipe('left')}
-                  activeOpacity={0.7}
-                  hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
-                >
+                <TouchableOpacity style={[styles.actionBtn, styles.actionBtnNope]} onPress={() => triggerSwipe('left')}>
                    <IconSymbol name="xmark" size={22} color="#ff6b6b" />
                 </TouchableOpacity>
 
-                <TouchableOpacity 
-                  style={[styles.actionBtn, styles.actionBtnLike]}
-                  onPress={() => triggerSwipe('right')}
-                  activeOpacity={0.7}
-                  hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
-                >
+                <TouchableOpacity style={[styles.actionBtn, styles.actionBtnLike]} onPress={() => triggerSwipe('right')}>
                    <IconSymbol name="heart.fill" size={22} color="#4cd964" />
                 </TouchableOpacity>
 
-                <TouchableOpacity 
-                  style={styles.actionBtn} 
-                  onPress={() => setShowDetails(true)}
-                  activeOpacity={0.7}
-                  hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
-                >
+                <TouchableOpacity style={styles.actionBtn} onPress={() => setShowDetails(true)}>
                    <IconSymbol name="ellipsis" size={20} color="#fff" />
                 </TouchableOpacity>
               </View>
@@ -219,12 +231,19 @@ export function ItemCard({
   );
 }
 
-function CarouselImages({ item }: { item: Item }) {
+// =======================================================
+//            CONTROLLED CAROUSEL
+// =======================================================
+function CarouselImages({ 
+  item, 
+  activeIndex 
+}: { 
+  item: Item, 
+  activeIndex: number 
+}) {
   const PREFIX = "https://m.media-amazon.com/images/G/01/Shopbop/p";
   const scrollRef = useRef<ScrollView | null>(null);
   const [pageWidth, setPageWidth] = useState(CARD_WIDTH);
-  const [logicalIndex, setLogicalIndex] = useState(0);
-  const virtualIndexRef = useRef(1);
 
   const images: string[] = (item.product_images && item.product_images.length
     ? item.product_images
@@ -233,77 +252,27 @@ function CarouselImages({ item }: { item: Item }) {
       : [""]
   ).map((s) => (s.startsWith("http") ? s : `${PREFIX}${s}`));
 
-  const virtImages = [images[images.length - 1], ...images, images[0]];
-  const AUTOPLAY_MS = 5000; 
-  const JUMP_DELAY_MS = 350;
-  const intervalRef = useRef<number | null>(null);
-
-  const goTo = (nextVirtual: number) => {
-    if (!scrollRef.current) return;
-    scrollRef.current.scrollTo({ x: pageWidth * nextVirtual, animated: true });
-    virtualIndexRef.current = nextVirtual;
-
-    if (nextVirtual === virtImages.length - 1) {
-      setTimeout(() => {
-        if (!scrollRef.current) return;
-        scrollRef.current.scrollTo({ x: pageWidth * 1, animated: false });
-        virtualIndexRef.current = 1;
-        setLogicalIndex(0);
-      }, JUMP_DELAY_MS);
-    } else if (nextVirtual === 0) {
-      setTimeout(() => {
-        scrollRef.current?.scrollTo({ x: pageWidth * (virtImages.length - 2), animated: false });
-        virtualIndexRef.current = virtImages.length - 2;
-        setLogicalIndex(images.length - 1);
-      }, JUMP_DELAY_MS);
-    } else {
-      setLogicalIndex((nextVirtual - 1 + images.length) % images.length);
-    }
-  };
-
-  const goNext = () => goTo(virtualIndexRef.current + 1);
-  const goPrev = () => goTo(virtualIndexRef.current - 1);
-
+  // React to parent index changes
   useEffect(() => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    if(images.length > 1) {
-      intervalRef.current = setInterval(goNext, AUTOPLAY_MS);
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({ x: pageWidth * activeIndex, animated: true });
     }
-    return () => { if(intervalRef.current) clearInterval(intervalRef.current); };
-  }, [images.length, pageWidth, virtImages.length]);
-
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ x: pageWidth * 1, animated: false });
-    virtualIndexRef.current = 1;
-    setLogicalIndex(0);
-  }, [pageWidth, images.length]);
-
-  const tapGesture = Gesture.Tap()
-    .runOnJS(true)
-    .maxDuration(250)
-    .onEnd((e) => {
-      if (e.x < pageWidth * 0.35) goPrev();
-      else goNext();
-    });
+  }, [activeIndex, pageWidth]);
 
   return (
     <View
       style={styles.carouselContainer}
       onLayout={(e) => setPageWidth(e.nativeEvent.layout.width)}
     >
-      <GestureDetector gesture={tapGesture}>
-        <Animated.View style={StyleSheet.absoluteFill} />
-      </GestureDetector>
-
       <ScrollView
         ref={scrollRef}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        scrollEnabled={false} 
+        scrollEnabled={false} // Disable manual scrolling, controlled by taps
         style={{ flex: 1 }}
       >
-        {virtImages.map((src, i) => (
+        {images.map((src, i) => (
           <View key={i} style={{ width: pageWidth, height: "100%" }}>
             <Image
               source={{ uri: src || item.image_url }}
@@ -322,7 +291,7 @@ function CarouselImages({ item }: { item: Item }) {
               key={i}
               style={[
                 styles.carouselDot,
-                i === logicalIndex && styles.carouselDotActive,
+                i === activeIndex && styles.carouselDotActive,
               ]}
             />
           ))}
@@ -360,19 +329,19 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   
-  // --- UPDATED STAMP STYLES TO PREVENT CROPPING ---
+  // Stamps
   stampsLayer: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 100,
   },
   stampContainer: {
     position: 'absolute',
-    top: 60, // Moved further down to clear corners
-    paddingHorizontal: 18, // More horizontal padding
+    top: 45, 
+    paddingHorizontal: 18, 
     paddingVertical: 8,
-    borderWidth: 4, // Thicker border for clarity
+    borderWidth: 4, 
     borderRadius: 8,
-    backgroundColor: 'rgba(0,0,0,0.05)', // Very subtle bg
+    backgroundColor: 'rgba(0,0,0,0.05)', 
   },
   stampText: {
     fontSize: 32,
@@ -380,10 +349,10 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     textTransform: 'uppercase',
     textAlign: 'center',
-    lineHeight: 42, // Increased line height to prevent vertical clipping
+    lineHeight: 42,
   },
   nopeStamp: {
-    left: 40, // Moved inward from edge
+    left: 25, 
     borderColor: '#ff4b4b',
     transform: [{ rotate: '15deg' }],
   },
@@ -391,7 +360,7 @@ const styles = StyleSheet.create({
     color: '#ff4b4b',
   },
   likeStamp: {
-    right: 40, // Moved inward from edge
+    right: 25, 
     borderColor: '#4cd964',
     transform: [{ rotate: '-15deg' }],
   },
@@ -399,6 +368,7 @@ const styles = StyleSheet.create({
     color: '#4cd964',
   },
 
+  // Gradient
   gradient: {
     position: "absolute",
     bottom: 0,
