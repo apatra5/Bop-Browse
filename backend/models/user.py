@@ -11,4 +11,5 @@ class User(Base):
 
     liked_items = relationship("UserLikeItems", back_populates="user")
     disliked_items = relationship("Item", secondary=user_dislike_items, back_populates="disliked_by_users")
+    preference_items = relationship("UserPreferenceItems", back_populates="user")
 

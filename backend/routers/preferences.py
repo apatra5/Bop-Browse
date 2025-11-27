@@ -25,7 +25,7 @@ def add_preference(
 ):
     """Add a preference - adds the item to the user's likes table"""
     try:
-        result = crud_likes.like_item(
+        result = crud_likes.add_to_user_preferences(
             db, 
             user_id=preference_data.user_id, 
             item_id=preference_data.item_id
@@ -56,7 +56,7 @@ def get_user_preferences(
 ):
     """Get all preferences (liked items) for a user"""
     try:
-        preferences = crud_likes.get_user_liked_items_for_closet_display(db, user_id=user_id)
+        preferences = crud_likes.get_user_preferences(db, user_id=user_id)
         
         if preferences is None:
             raise HTTPException(

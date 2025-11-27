@@ -2,10 +2,10 @@ from sqlalchemy import func
 from sqlalchemy.orm import selectinload
 from models.user import User
 from models.item import Item
-from models.associations import UserLikeItems, user_dislike_items, item_category
+from models.associations import UserLikeItems, user_dislike_items, item_category, UserPreferenceItems
 
 def like_item(db, user_id: int, item_id: str):
-    """Add an item to the user's liked items."""
+    """Add an item to the user's liked items. Also add to preference items."""
     query = (
         db.query(UserLikeItems)
         .filter(UserLikeItems.user_id == user_id)
@@ -13,8 +13,10 @@ def like_item(db, user_id: int, item_id: str):
     )
 
     if query.first() is None:
-        user_like_item = UserLikeItems(user_id=user_id, item_id=item_id, show_in_closet=True)
+        user_like_item = UserLikeItems(user_id=user_id, item_id=item_id)
         db.add(user_like_item)
+        user_preference_item = UserPreferenceItems(user_id=user_id, item_id=item_id)
+        db.add(user_preference_item)
         db.commit()
     return query.first()
 
@@ -28,15 +30,50 @@ def dislike_item(db, user_id: int, item_id: str):
         db.commit()
     return user
 
+def add_to_user_preferences(db, user_id: int, item_id: str):
+    """Add an item to the user's preference items."""
+    query = (
+        db.query(UserPreferenceItems)
+        .filter(UserPreferenceItems.user_id == user_id)
+        .filter(UserPreferenceItems.item_id == item_id)
+    )
+
+    if query.first() is None:
+        user_preference_item = UserPreferenceItems(user_id=user_id, item_id=item_id)
+        db.add(user_preference_item)
+        db.commit()
+    return query.first()
+
+def clear_user_preferences(db, user_id: int):
+    """Clear all items from the user's preference items."""
+    count = (
+        db.query(UserPreferenceItems)
+        .filter(UserPreferenceItems.user_id == user_id)
+        .delete()
+    )
+    db.commit()
+    return count
+
+def get_user_preferences(db, user_id: int):
+    """Retrieve all items from the user's preference items."""
+    user = (
+        db.query(User)
+        .options(selectinload(User.preference_items).selectinload(UserPreferenceItems.item))
+        .filter(User.id == user_id)
+        .first()
+    )
+    if user:
+        return [pref_item.item for pref_item in user.preference_items]
+    return None
 
 def get_user_liked_items(db, user_id: int):
-    """Retrieve all items liked by the user."""
+    """Retrieve all items liked by the user from user's preference table."""
     user = (
         db.query(User)
         .filter(User.id == user_id)
         .first()
     )
-    return user.liked_items
+    return user.preference_items
 
 def get_user_liked_items_for_closet_display(db, user_id: int):
     """Retrieve items liked by the user that are marked to show in closet."""
@@ -44,7 +81,6 @@ def get_user_liked_items_for_closet_display(db, user_id: int):
         db.query(Item)
         .join(UserLikeItems)
         .filter(UserLikeItems.user_id == user_id)
-        .filter(UserLikeItems.show_in_closet == True)
         .order_by(UserLikeItems.like_timestamp.desc())
         .all()
     )
@@ -52,34 +88,45 @@ def get_user_liked_items_for_closet_display(db, user_id: int):
     return items
 
 def remove_liked_items_from_closet_display(db, user_id: int, item_id: str):
-    """Set show_in_closet to False for a liked item."""
+    """Remove an item from user's liked items closet display, but not remove from user's preference table."""
     user_like_item_row = db.query(UserLikeItems).filter(
         UserLikeItems.user_id == user_id,
         UserLikeItems.item_id == item_id
     ).first()
-    print(f"user_like_item_row: {user_like_item_row}")
     if user_like_item_row:
-        user_like_item_row.show_in_closet = False
+        db.delete(user_like_item_row)
         db.commit()
-    return user_like_item_row
+    return True
 
 def remove_from_liked_items(db, user_id: int, item_id: str):
-    """Remove an item from the user's liked items."""
+    """Remove an item from the user's liked items, and also from preference items."""
 
     user_like_item_row = db.query(UserLikeItems).filter(
         UserLikeItems.user_id == user_id,
         UserLikeItems.item_id == item_id
+    ).first()
+
+    user_preference_item_row = db.query(UserPreferenceItems).filter(
+        UserPreferenceItems.user_id == user_id,
+        UserPreferenceItems.item_id == item_id
     ).first()
 
     if user_like_item_row:
         db.delete(user_like_item_row)
         db.commit()
         
+    if user_preference_item_row:
+        db.delete(user_preference_item_row)
+        db.commit()
+
     user = db.query(User).filter(User.id == user_id).first()
     item = db.query(Item).filter(Item.id == item_id).first()
     
     if item in user.liked_items:
         user.liked_items.remove(item)
+        db.commit()
+    if item in user.preference_items:
+        user.preference_items.remove(item)
         db.commit()
     return user
 
@@ -90,7 +137,6 @@ def get_user_liked_items_by_category(db, user_id: int, category_id: str):
     liked_item_ids = (
         db.query(UserLikeItems.item_id)
         .filter(UserLikeItems.user_id == user_id)
-        .filter(UserLikeItems.show_in_closet == True)
     ).all()
     
     liked_item_ids = [item_id for (item_id,) in liked_item_ids]
@@ -110,10 +156,10 @@ def get_user_liked_items_by_category(db, user_id: int, category_id: str):
     return items
 
 def get_user_liked_items_randomized(db, user_id:int, limit:int=10):
-    """Retrieve a randomized list of item IDs liked by the user."""
+    """Retrieve a randomized list of item IDs from user's preferred items."""
     query = (
-        db.query(UserLikeItems.item_id)
-        .filter(UserLikeItems.user_id == user_id)
+        db.query(UserPreferenceItems.item_id)
+        .filter(UserPreferenceItems.user_id == user_id)
         .order_by(func.random())
         .limit(limit)
     )
@@ -173,6 +219,36 @@ def _test_user_like_item_timestamp():
         else:
             print(f"Item ID: {item.id}")
             
+"""
+Migrate from the aggregated liked table to preference table
+"""
+def _migrate_liked_to_preference():
+    from db.session import SessionLocal
+    db = SessionLocal()
+    all_liked = db.query(UserLikeItems).all()
+    for liked in all_liked:
+        user_id = liked.user_id
+        item_id = liked.item_id
+        existing_pref = (
+            db.query(UserPreferenceItems)
+            .filter(UserPreferenceItems.user_id == user_id)
+            .filter(UserPreferenceItems.item_id == item_id)
+            .first()
+        )
+        if existing_pref is None:
+            new_pref = UserPreferenceItems(user_id=user_id, item_id=item_id, set_timestamp=liked.like_timestamp)
+            db.add(new_pref)
+            print(f"Added preference for user {user_id}, item {item_id}")
+    db.commit()
+
+def _remove_liked_rows_not_shown_in_closet():
+    from db.session import SessionLocal
+    db = SessionLocal()
+    all_liked = db.query(UserLikeItems).filter(UserLikeItems.show_in_closet == False).all()
+    for liked in all_liked:
+        db.delete(liked)
+        print(f"Deleted liked item row for user {liked.user_id}, item {liked.item_id}")
+    db.commit()
 
 if __name__ == "__main__":
-    _test_user_like_item_timestamp()
+    _remove_liked_rows_not_shown_in_closet()
