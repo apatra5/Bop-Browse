@@ -2,7 +2,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import selectinload
 from models.user import User
 from models.item import Item
-from models.associations import UserLikeItems, user_dislike_items, item_category
+from models.associations import UserLikeItems, user_dislike_items, item_category, UserPreferenceItems
 
 def like_item(db, user_id: int, item_id: str):
     """Add an item to the user's liked items."""
@@ -173,6 +173,36 @@ def _test_user_like_item_timestamp():
         else:
             print(f"Item ID: {item.id}")
             
+"""
+Migrate from the aggregated liked table to preference table
+"""
+def _migrate_liked_to_preference():
+    from db.session import SessionLocal
+    db = SessionLocal()
+    all_liked = db.query(UserLikeItems).all()
+    for liked in all_liked:
+        user_id = liked.user_id
+        item_id = liked.item_id
+        existing_pref = (
+            db.query(UserPreferenceItems)
+            .filter(UserPreferenceItems.user_id == user_id)
+            .filter(UserPreferenceItems.item_id == item_id)
+            .first()
+        )
+        if existing_pref is None:
+            new_pref = UserPreferenceItems(user_id=user_id, item_id=item_id, set_timestamp=liked.like_timestamp)
+            db.add(new_pref)
+            print(f"Added preference for user {user_id}, item {item_id}")
+    db.commit()
+
+def _remove_liked_rows_not_shown_in_closet():
+    from db.session import SessionLocal
+    db = SessionLocal()
+    all_liked = db.query(UserLikeItems).filter(UserLikeItems.show_in_closet == False).all()
+    for liked in all_liked:
+        db.delete(liked)
+        print(f"Deleted liked item row for user {liked.user_id}, item {liked.item_id}")
+    db.commit()
 
 if __name__ == "__main__":
-    _test_user_like_item_timestamp()
+    _remove_liked_rows_not_shown_in_closet()

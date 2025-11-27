@@ -26,6 +26,7 @@ class Item(Base):
 
     liked_by_users = relationship("UserLikeItems", back_populates="item")
     disliked_by_users = relationship("User", secondary=user_dislike_items, back_populates="disliked_items")
+    preferred_by_users = relationship("UserPreferenceItems", back_populates="item")
 
 
     def __repr__(self):

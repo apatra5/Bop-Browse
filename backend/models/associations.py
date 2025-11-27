@@ -20,11 +20,19 @@ class UserLikeItems(Base):
     __tablename__ = 'user_like_items'
     user_id = Column(Integer, ForeignKey('users.id'), primary_key=True)
     item_id = Column(String, ForeignKey('items.id'), primary_key=True)
-    show_in_closet = Column(Boolean, default=True)
     like_timestamp = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="liked_items")
     item = relationship("Item", back_populates="liked_by_users")
+
+class UserPreferenceItems(Base):
+    __tablename__ = 'user_preference_items'
+    user_id = Column(Integer, ForeignKey('users.id'), primary_key=True)
+    item_id = Column(String, ForeignKey('items.id'), primary_key=True)
+    set_timestamp = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", back_populates="preference_items")
+    item = relationship("Item", back_populates="preferred_by_users")
 
 user_dislike_items = Table(
     'user_dislike_items',
