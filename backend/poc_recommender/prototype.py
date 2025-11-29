@@ -38,14 +38,14 @@ if __name__ == "__main__":
     # Clothing > Activewear > Leggings
     # Clothing > Dresses
     # Clothing > Sweaters & Knits
-    categories = ['74369','13351','13317']
+    categories = ['13266']
     print("Getting items from categories:", categories)
 
     # get items from these categories
     items = []
     for category in categories:
-        new_items = get_items_from_category(category, limit=10)
-        items.extend([(item.id, item.name, item.image_url_suffix) for item in new_items])
+        new_items = get_items_from_category(category, limit=500)
+        items.extend([(item.id, f"[{item.color}] {item.name} [{[c.name for c in item.categories]}]", item.image_url_suffix) for item in new_items])
     print(items)
 
     df = pd.DataFrame(items, columns=['item_id', 'item_name', 'item_image_url'])
@@ -65,11 +65,23 @@ if __name__ == "__main__":
     # 3. for POC, just take the first item (a knitted top), and find closest items
     test_item_vector = df.iloc[0]['item_embedding']
     print("Test item:", df.iloc[0]['item_name'])
-    closest_items = get_closest_items(test_item_vector, item_embeddings, items, top_k=10)
+    closest_items = get_closest_items(test_item_vector, item_embeddings, items, top_k=100)
     print("Closest items:")
     for item, sim in closest_items:
         print(f"Item ID: {item[0]}, Name: {item[1]}, Similarity: {sim:.4f}")
-
+    with open("poc_recommender_output.html", "w") as f:
+        f.write("<html><body>\n")
+        f.write(f"<h2>Test item: {df.iloc[0]['item_name']}</h2>\n")
+        f.write(f"<img src='https://m.media-amazon.com/images/G/01/Shopbop/p{df.iloc[0]['item_image_url']}' alt='{df.iloc[0]['item_name']}' width='200'><br>\n")
+        f.write("<h3>Closest items:</h3>\n")
+        for item, sim in closest_items:
+            f.write(f"<div style='margin-bottom:20px;'>\n")
+            f.write(f"<strong>Item ID:</strong> {item[0]}<br>\n")
+            f.write(f"<strong>Name:</strong> {item[1]}<br>\n")
+            f.write(f"<strong>Similarity:</strong> {sim:.4f}<br>\n")
+            f.write(f"<img src='https://m.media-amazon.com/images/G/01/Shopbop/p{item[2]}' alt='{item[1]}' width='200'><br>\n")
+            f.write("</div>\n")
+        f.write("</body></html>\n")
     """
     Output:
     Test item: Spacedye Trophy High Waisted Midi Leggings
