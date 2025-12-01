@@ -34,6 +34,7 @@ def get_feed(
 def get_personalized_feed(
 	request: PersonalizedFeedRequest,
 	db: Session = Depends(get_db),
+	weighted_by_timestamp: bool = Query(False, description="Whether to weight liked items by recency")
 ):
 	"""Return a personalized item feed for the user based on their like history and specified categories."""
 	items = recommender.get_personalized_item_feed_for_user(

@@ -155,16 +155,46 @@ def get_user_liked_items_by_category(db, user_id: int, category_id: str):
     
     return items
 
-def get_user_liked_items_randomized(db, user_id:int, limit:int=10):
-    """Retrieve a randomized list of item IDs from user's preferred items."""
+def get_user_liked_items_randomized(db, user_id:int, limit:int=10, weighted_by_timestamp:bool=False):
+    """
+    Retrieve a randomized list of item IDs from user's preferred items.
+    If weighted_by_timestamp is True, more recently liked items have higher chance of being selected.
+    """
     query = (
         db.query(UserPreferenceItems.item_id)
         .filter(UserPreferenceItems.user_id == user_id)
-        .order_by(func.random())
-        .limit(limit)
     )
+    # To calculate weighted random selection, newest items will be more likely to be selected.
+    if weighted_by_timestamp:
+        # First calculate the weight based on time difference from now. 
+        subquery = (
+            db.query(
+                UserPreferenceItems.item_id,
+                (func.extract('epoch', func.now()) - func.extract('epoch', UserPreferenceItems.set_timestamp)).label('time_diff')
+            )
+            .filter(UserPreferenceItems.user_id == user_id)
+            .subquery()
+        )
+        # Then the weighted randomized value will be time_diff * random() and sorted ascendingly.
+        query = (
+            db.query(subquery.c.item_id)
+            .order_by((subquery.c.time_diff * func.random()).asc())
+            .limit(limit)
+        )
+        # Then get the items from the item IDs
+        item_ids = [item_id for (item_id,) in query.all()]
+        query = (
+            db.query(Item)
+            .filter(Item.id.in_(item_ids))
+        )
+    else:
+        query = (
+            db.query(UserPreferenceItems.item_id)
+            .filter(UserPreferenceItems.user_id == user_id)
+            .order_by(func.random())
+            .limit(limit)
+        )
     return [item for (item,) in query.all()]
-
 
 """"
 Manual tests
