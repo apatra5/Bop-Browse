@@ -1,7 +1,7 @@
 
 from typing import List
 
-from sqlalchemy import desc, func, text
+from sqlalchemy import desc, func, text, update
 from models.item import Item, ProductImages
 from models.associations import item_category, item_outfit
 
@@ -79,6 +79,7 @@ def update_item(
         stretch: str = None,
         product_images_urls: List[str] = None,
         embedding = None,
+        detailed_embedding = None,
         ) -> Item:
     """Update an existing item."""
     db_item = db.query(Item).filter(Item.id == id).first()
@@ -104,10 +105,17 @@ def update_item(
             for url in product_images_urls:
                 pi = ProductImages(item_id=id, image_url_suffix=url)
                 db_item.product_images.append(pi)
+        if detailed_embedding is not None:
+            db_item.detailed_embedding = detailed_embedding
         db.add(db_item)
         db.commit()
         db.refresh(db_item)
     return db_item
+
+def bulk_update_items(db, items: List[Item]) -> None:
+    """Bulk update multiple items."""
+    db.execute(update(Item),items)
+    db.commit()
 
 def delete_item(db, id: str) -> bool:
     """Delete an item by its ID."""
@@ -137,7 +145,7 @@ def get_items_by_category(db, category_id: str, limit: int = 10) -> List[Item]:
     return (
         db.query(Item)
         .filter(Item.categories.any(item_category.c.category_id == category_id))
-        .order_by(Item.id)
+        .order_by(func.random())
         .limit(limit)
         .all()
     )
@@ -216,11 +224,11 @@ def get_similar_unseen_items_for_user(db, item_id: str, user_id: str, top_k: int
 
     query = (
         query
-        .filter(Item.embedding != None)
+        .filter(Item.detailed_embedding != None)
         .filter(Item.id != item_id)
         .filter(~Item.liked_by_users.any(user_id=user_id))
         .filter(~Item.disliked_by_users.any(id=user_id))
-        .order_by(text(f"embedding <-> {vec_literal}::vector"))
+        .order_by(text(f"detailed_embedding <-> {vec_literal}::vector"))
         .limit(top_k)
     )
 

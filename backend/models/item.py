@@ -20,6 +20,7 @@ class Item(Base):
 
 
     embedding = Column(Vector(768), nullable=True)
+    detailed_embedding = Column(Vector(768), nullable=True)
 
     categories = relationship("Category", secondary=item_category, back_populates="items")
     outfits = relationship("Outfit", secondary=item_outfit, back_populates="items")
