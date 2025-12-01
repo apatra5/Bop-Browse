@@ -72,3 +72,24 @@ def get_user_preferences(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error fetching preferences: {str(e)}"
         )
+
+
+@router.delete("/{user_id}", status_code=status.HTTP_200_OK)
+def delete_user_preferences(
+    user_id: int,
+    db: Session = Depends(get_db)
+):
+    """Delete all preferences for a user"""
+    try:
+        count = crud_likes.clear_user_preferences(db, user_id=user_id)
+        
+        return {
+            "message": f"Successfully deleted {count} preference(s)",
+            "user_id": user_id,
+            "deleted_count": count
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error deleting preferences: {str(e)}"
+        )
