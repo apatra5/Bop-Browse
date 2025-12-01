@@ -224,11 +224,11 @@ def get_similar_unseen_items_for_user(db, item_id: str, user_id: str, top_k: int
 
     query = (
         query
-        .filter(Item.embedding != None)
+        .filter(Item.detailed_embedding != None)
         .filter(Item.id != item_id)
         .filter(~Item.liked_by_users.any(user_id=user_id))
         .filter(~Item.disliked_by_users.any(id=user_id))
-        .order_by(text(f"embedding <-> {vec_literal}::vector"))
+        .order_by(text(f"detailed_embedding <-> {vec_literal}::vector"))
         .limit(top_k)
     )
 
