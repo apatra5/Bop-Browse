@@ -13,6 +13,11 @@ def get_personalized_item_feed_for_user(db, user_id: str, category_ids: List[str
     Get a personalized item feed for user by getting unseen items that are similar to their liked items and is within the specified categories.
     It will also contain some random items to add diversity.
     """
+    # if category_ids is empty, get the item from the clothing category to prevent returning non-clothing items
+    if len(category_ids) == 0:
+        category_ids = ["13266"]
+
+
     recommended_items = []
     liked_item_number = int(limit * 0.3) # the number of items that the user has already liked to base recommendations on
     random_liked_items = get_user_liked_items_randomized(db, user_id=user_id, limit=liked_item_number)

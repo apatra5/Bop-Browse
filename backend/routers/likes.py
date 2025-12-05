@@ -6,6 +6,7 @@ from db.session import SessionLocal
 from crud import like_dislike_items as crud_likes
 from schemas.like import LikeRequest, LikeResponse, UserLikesResponse
 from schemas.item import ItemOut, ItemWithCategories
+from scripts.sync_items import SyncItems
 
 router = APIRouter(prefix="/likes", tags=["likes"])
 
@@ -28,9 +29,17 @@ def like_item(
         result = crud_likes.like_item(db, user_id=like_data.user_id, item_id=like_data.item_id)
         
         if result is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User or item not found"
+            if not SyncItems().addItemByProductSin(like_data.item_id):
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Item out of stock"
+                )
+            print("Item added to database, retrying like operation.")
+            result = crud_likes.like_item(db, user_id=like_data.user_id, item_id=like_data.item_id)
+            if result is None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User or item not found"
             )
         
         return LikeResponse(

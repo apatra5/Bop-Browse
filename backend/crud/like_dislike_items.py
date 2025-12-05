@@ -6,6 +6,9 @@ from models.associations import UserLikeItems, user_dislike_items, item_category
 
 def like_item(db, user_id: int, item_id: str):
     """Add an item to the user's liked items. Also add to preference items."""
+    item_exist = db.query(Item).filter(Item.id == item_id).first()
+    if not item_exist:
+        return None
     query = (
         db.query(UserLikeItems)
         .filter(UserLikeItems.user_id == user_id)
@@ -155,7 +158,7 @@ def get_user_liked_items_by_category(db, user_id: int, category_id: str):
     
     return items
 
-def get_user_liked_items_randomized(db, user_id:int, limit:int=10, weighted_by_timestamp:bool=False):
+def get_user_liked_items_randomized(db, user_id:int, limit:int=10, weighted_by_timestamp:bool=True):
     """
     Retrieve a randomized list of item IDs from user's preferred items.
     If weighted_by_timestamp is True, more recently liked items have higher chance of being selected.
@@ -183,10 +186,7 @@ def get_user_liked_items_randomized(db, user_id:int, limit:int=10, weighted_by_t
         )
         # Then get the items from the item IDs
         item_ids = [item_id for (item_id,) in query.all()]
-        query = (
-            db.query(Item)
-            .filter(Item.id.in_(item_ids))
-        )
+        return item_ids
     else:
         query = (
             db.query(UserPreferenceItems.item_id)
@@ -194,7 +194,7 @@ def get_user_liked_items_randomized(db, user_id:int, limit:int=10, weighted_by_t
             .order_by(func.random())
             .limit(limit)
         )
-    return [item for (item,) in query.all()]
+        return [item for (item,) in query.all()]
 
 """"
 Manual tests

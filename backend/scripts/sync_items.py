@@ -294,7 +294,15 @@ class SyncItems:
         deleted_outfits = crud_outfit.delete_all_outfits(self.db)
         logging.info(f"Deleted {deleted_items} items, {deleted_categories} categories, {deleted_outfits} outfits from the database.")
 
-
+    def addItemByProductSin(self, product_sin: str):
+        product_info = ProductInfo.from_product_sin(product_sin, self.api_client)
+        if not product_info:
+            logging.error(f"Failed to fetch product info for product_sin: {product_sin}")
+            return False
+        # For simplicity, we won't have category path here
+        self._add_or_update_item(product_info, category_path=[])
+        logging.info(f"Added/Updated item with product_sin: {product_sin}")
+        return True
 
 if __name__ == "__main__":
     syncer = SyncItems()
