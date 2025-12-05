@@ -44,5 +44,23 @@ def update_user(username: str, user_in: UserUpdate, db: Session = Depends(get_db
         if crud_user.get_user_by_username(db, user_in.username):
             raise HTTPException(status_code=400, detail="New username already taken")
 
-    updated = crud_user.update_user(db, user, username=user_in.username, password=user_in.password)
+    updated = crud_user.update_user(
+        db, 
+        user, 
+        username=user_in.username, 
+        password=user_in.password,
+        is_new_user=user_in.is_new_user
+    )
     return updated
+
+
+@router.get("/{username}/status", response_model=dict)
+def check_user_status(username: str, db: Session = Depends(get_db)):
+    """Check if user is a first-time user"""
+    user = crud_user.get_user_by_username(db, username)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {
+        "username": user.username,
+        "is_new_user": user.is_new_user
+    }

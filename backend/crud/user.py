@@ -29,12 +29,13 @@ def create_user(db: Session, username: str, password: str) -> User:
     - username: str
     - password: plaintext str (will be stored as md5 hash)
   The model is expected to have a `hashed_password` column; here it stores md5 hash.
+  New users are created with is_new_user=True by default.
   """
   stored = _get_password_hash(password)
   db_user = User(
     username=username,
     hashed_password=stored,
-    # add other fields if needed, e.g. is_active=True
+    is_new_user=True,
   )
   db.add(db_user)
   db.commit()
@@ -55,14 +56,17 @@ def authenticate_user(db: Session, username: str, password: str) -> Optional[Use
   return user
 
 
-def update_user(db: Session, user: User, username: Optional[str] = None, password: Optional[str] = None) -> User:
-  """Update user's username and/or password. Password will be stored as md5 hash."""
+def update_user(db: Session, user: User, username: Optional[str] = None, password: Optional[str] = None, is_new_user: Optional[bool] = None) -> User:
+  """Update user's username, password, and/or is_new_user flag. Password will be stored as md5 hash."""
   changed = False
   if username is not None and username != user.username:
     user.username = username
     changed = True
   if password is not None:
     user.hashed_password = _get_password_hash(password)
+    changed = True
+  if is_new_user is not None and is_new_user != user.is_new_user:
+    user.is_new_user = is_new_user
     changed = True
   if changed:
     db.add(user)

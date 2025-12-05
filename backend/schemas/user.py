@@ -12,6 +12,7 @@ class UserCreate(UserBase):
 
 class UserOut(UserBase):
     id: int
+    is_new_user: bool = True
 
     class Config:
         orm_mode = True
@@ -20,3 +21,4 @@ class UserOut(UserBase):
 class UserUpdate(BaseModel):
     username: Optional[str] = None
     password: Optional[str] = None
+    is_new_user: Optional[bool] = None
