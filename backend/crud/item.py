@@ -47,9 +47,28 @@ def get_items_by_categories_filter(db, category_ids: List[str], offset: int = 0,
 """
 Basic CRUD operations for Item model. These will be used by the database population/synchronization script
 """
-def create_item(db, id: str, name: str, image_url_suffix: str = None, product_detail_url: str = None, embedding = None) -> Item:
+def create_item(
+        db, 
+        id: str, 
+        name: str = None, 
+        image_url_suffix: str = None, 
+        product_detail_url: str = None, 
+        designer_name: str = None,
+        price: str = None,
+        color: str = None,
+        stretch: str = None,
+        product_images_urls: List[str] = None,
+        embedding = None,
+        detailed_embedding = None,
+        ) -> Item:
     """Create a new item."""
-    db_item = Item(id=id, name=name, image_url_suffix=image_url_suffix, product_detail_url=product_detail_url, embedding=embedding)
+    db_item = Item(id=id, 
+        name=name, image_url_suffix=image_url_suffix, product_detail_url=product_detail_url, designer_name=designer_name,
+        price=price, color=color, stretch=stretch, embedding=embedding, detailed_embedding=detailed_embedding)
+    if product_images_urls:
+        for url in product_images_urls:
+            pi = ProductImages(item_id=id, image_url_suffix=url)
+            db_item.product_images.append(pi)
     db.add(db_item)
     db.commit()
     db.refresh(db_item)
