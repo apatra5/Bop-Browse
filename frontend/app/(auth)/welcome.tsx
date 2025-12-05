@@ -9,14 +9,21 @@ import {
   Platform, 
   UIManager, 
   Animated, 
-  StatusBar 
+  StatusBar,
+  ActivityIndicator, // Added for loading state
+  Alert 
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
+import { useAuth } from '@/contexts/AuthContext'; // Import Auth Context
+
+// Use your API Base URL
+const API_BASE_URL = 'http://0.0.0.0:8000'; 
 
 export default function Welcome() {
   const router = useRouter();
+  const { username } = useAuth(); // Get current username
   
   // NOTE: Ensure these images exist in your assets folder
   const images = [
@@ -27,28 +34,28 @@ export default function Welcome() {
 
   const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
   const CONTAINER_PADDING = 20;
-  // Make the image slightly taller relative to screen for a modern feel
   const CAROUSEL_HEIGHT = SCREEN_HEIGHT * 0.62; 
   const pageWidth = SCREEN_WIDTH - (CONTAINER_PADDING * 2);
 
-  // Autoplay configuration (ms)
   const AUTOPLAY_INTERVAL_MS = 4000;
   const ANIMATION_JUMP_DELAY_MS = 350;
   const PAUSE_AFTER_TAP_MS = 4000;
 
-  // enable LayoutAnimation on Android
   useEffect(() => {
     if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
       UIManager.setLayoutAnimationEnabledExperimental(true);
     }
   }, []);
 
-  // Animated value for pager dot scaling
   const animatedIndex = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef<any>(null);
   const [currentIndex, setCurrentIndex] = useState(0); 
   const virtualIndexRef = useRef(1); 
   const [isPaused, setIsPaused] = useState(false);
+  
+  // NEW: Loading state for the API call
+  const [checkingUser, setCheckingUser] = useState(false);
+  
   const pauseTimeoutRef = useRef<number | null>(null);
 
   const setLogicalIndex = (i: number) => {
@@ -62,7 +69,6 @@ export default function Welcome() {
 
   const virtImages = [images[images.length - 1], ...images, images[0]];
 
-  // Initialize scroll position
   useEffect(() => {
     setTimeout(() => {
       if (scrollRef.current && typeof scrollRef.current.scrollTo === 'function') {
@@ -73,7 +79,6 @@ export default function Welcome() {
     }, 0);
   }, [pageWidth]);
 
-  // Autoplay Loop
   useEffect(() => {
     const id = setInterval(() => {
       if (isPaused) return;
@@ -107,11 +112,42 @@ export default function Welcome() {
     };
   }, [images.length, pageWidth, isPaused]);
 
-  const startBrowsing = () => {
-    router.push('./preferences');
+  // --- NEW LOGIC: Check User Status ---
+  const startBrowsing = async () => {
+    if (!username) {
+      Alert.alert("Error", "User not logged in.");
+      return;
+    }
+
+    setCheckingUser(true); // Start loading spinner
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/users/${username}/status`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch user status');
+      }
+
+      const data = await response.json();
+
+      // Check the is_new_user flag
+      if (data.is_new_user === true) {
+        // Go to preferences (First time)
+        router.push('./preferences');
+      } else {
+        // Go directly to swiping/home page (Returning user)
+        // assuming /(tabs) is your main app layout
+        router.replace('/(tabs)');
+      }
+    } catch (error) {
+      console.error("Error checking status:", error);
+      // Fallback: Default to preferences if API fails
+      router.push('./preferences');
+    } finally {
+      setCheckingUser(false);
+    }
   };
 
-  // Scroll Handler
   const handleMomentumScrollEnd = (e: any) => {
     const offsetX = e.nativeEvent.contentOffset.x;
     const vi = Math.round(offsetX / pageWidth);
@@ -144,7 +180,6 @@ export default function Welcome() {
       <StatusBar barStyle="dark-content" />
       <Stack.Screen options={{ headerShown: false }} />
 
-      {/* Header Text */}
       <View style={styles.header}>
         <ThemedText type="title" style={styles.title}>
           BOP & BROWSE
@@ -152,7 +187,6 @@ export default function Welcome() {
         <ThemedText style={styles.byline}>CURATED BY SHOPBOP</ThemedText>
       </View>
 
-      {/* Main Carousel */}
       <View style={[styles.carouselWrapper, { height: CAROUSEL_HEIGHT }]}>
         <ScrollView
           ref={scrollRef}
@@ -181,10 +215,7 @@ export default function Welcome() {
         </ScrollView>
       </View>
 
-      {/* Footer Area */}
       <View style={styles.footer}>
-        
-        {/* Pager dots */}
         <View style={styles.dotsContainer}>
           {images.map((_, i) => (
             <TouchableOpacity
@@ -233,8 +264,13 @@ export default function Welcome() {
           style={styles.startButton} 
           onPress={startBrowsing} 
           activeOpacity={0.9}
+          disabled={checkingUser} // Disable button while checking
         >
-          <ThemedText style={styles.startText}>START BROWSING</ThemedText>
+          {checkingUser ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <ThemedText style={styles.startText}>START BROWSING</ThemedText>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -247,12 +283,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#ffffff',
     alignItems: 'center',
-    paddingTop: 70, // Adjust for safe area
+    paddingTop: 70, 
     paddingHorizontal: 20,
     justifyContent: 'space-between',
   },
-  
-  // Header
   header: {
     width: '100%',
     alignItems: 'center',
@@ -274,13 +308,10 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     textTransform: 'uppercase',
   },
-
-  // Carousel
   carouselWrapper: {
     width: '100%',
     marginBottom: 20,
     overflow: 'hidden',
-    // Removed heavy shadows for a cleaner look
   },
   hero: {
     width: '100%',
@@ -288,8 +319,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: '#f5f5f5',
   },
-
-  // Footer
   footer: {
     width: '100%',
     alignItems: 'center',
@@ -306,15 +335,14 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#e0e0e0', // Light grey inactive
+    backgroundColor: '#e0e0e0',
   },
   dotActive: {
-    backgroundColor: '#000', // Black active
+    backgroundColor: '#000',
     width: 8,
     height: 8,
     borderRadius: 4,
   },
-  
   caption: {
     fontSize: 12,
     color: '#666',
@@ -323,13 +351,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     fontWeight: '500',
   },
-  
-  // Button
   startButton: {
     width: '100%',
-    height: 52, // Standard height matching other screens
-    borderRadius: 8, // Modern radius (not fully pill)
-    backgroundColor: '#000', // Editorial Black
+    height: 52,
+    borderRadius: 8,
+    backgroundColor: '#000',
     alignItems: 'center',
     justifyContent: 'center',
   },

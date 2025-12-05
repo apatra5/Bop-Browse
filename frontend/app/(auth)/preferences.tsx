@@ -17,7 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
 
 const IMAGE_BASE_URL = 'https://m.media-amazon.com/images/G/01/Shopbop/p';
-const API_BASE_URL = 'http://0.0.0.0:8000'; // Define base URL for consistency
+const API_BASE_URL = 'http://0.0.0.0:8000'; 
 const { width } = Dimensions.get('window');
 
 // --- Layout Constants ---
@@ -35,16 +35,14 @@ interface ProductItem {
 }
 
 export default function PreferencesScreen() {
-  const { userId } = useAuth();
+  // 1. Get username and setIsNewUser from context
+  const { userId, username, setIsNewUser } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   
   const [items, setItems] = useState<ProductItem[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  
-  // Loading state for fetching items
   const [loading, setLoading] = useState(true);
-  // Loading state for submitting preferences
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -70,23 +68,21 @@ export default function PreferencesScreen() {
   };
 
   const handleContinue = async () => {
-    if (!userId) {
-      Alert.alert('Error', 'User ID not found. Please log in again.');
+    if (!userId || !username) {
+      Alert.alert('Error', 'User information missing. Please log in again.');
       return;
     }
 
     setSubmitting(true);
 
     try {
-      // 1. Create an array of Promises (one fetch call per selected item)
+      // --- STEP 1: Save Preferences (Parallel Requests) ---
       const selectedIds = Array.from(selected);
       
-      const promises = selectedIds.map((itemId) => {
+      const prefPromises = selectedIds.map((itemId) => {
         return fetch(`${API_BASE_URL}/preferences/`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             user_id: userId, 
             item_id: itemId,
@@ -94,24 +90,33 @@ export default function PreferencesScreen() {
         });
       });
 
-      // 2. Execute all requests in parallel
-      const responses = await Promise.all(promises);
-
-      // 3. Optional: Check if any failed
+      const responses = await Promise.all(prefPromises);
       const allSuccessful = responses.every(res => res.ok);
       
       if (!allSuccessful) {
         console.warn('Some preferences failed to save');
-        // You can choose to block navigation here, or proceed anyway 
-        // depending on strictness. We will proceed for better UX.
       }
 
-      // 4. Navigate to next screen
+      // --- STEP 2: Update User "is_new_user" Flag to False ---
+      const userUpdateResponse = await fetch(`${API_BASE_URL}/users/${username}/new-user-flag`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_new_user: false }),
+      });
+
+      if (!userUpdateResponse.ok) {
+        console.error('Failed to update new user flag on backend');
+      } else {
+        // Update local app state so we don't need to refetch user data
+        setIsNewUser(false);
+      }
+
+      // --- STEP 3: Navigate ---
       router.replace('/(tabs)');
 
     } catch (error) {
-      console.error('Error saving preferences:', error);
-      Alert.alert('Error', 'There was a problem saving your preferences. Please try again.');
+      console.error('Error in onboarding process:', error);
+      Alert.alert('Error', 'There was a problem saving your profile. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -153,7 +158,7 @@ export default function PreferencesScreen() {
           onPress={() => router.back()} 
           style={styles.iconBtn} 
           hitSlop={20}
-          disabled={submitting} // Prevent back during submit
+          disabled={submitting}
         >
           <IconSymbol name="chevron.left" size={24} color="#000" />
         </TouchableOpacity>
