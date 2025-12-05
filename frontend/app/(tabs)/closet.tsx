@@ -49,11 +49,11 @@ export default function ClosetScreen() {
 
   // --- Category Logic ---
   const categories = useMemo(() => [
-    'All Items', 'Outfit', 'Tops', 'Bottoms', 'Dresses', 'Skirts'
+    'All Items', 'Outfit', 'Tops', 'Jeans', 'Pants', 'Jackets', 'Dresses', 'Skirts'
   ], []);
 
   const PREDEFINED_CATEGORY_NAMES = useMemo(() => [
-    'Tops', 'Bottoms', 'Dresses', 'Skirts', 'Outerwear', 'Shoes'
+    'Tops', 'Jeans', 'Pants', 'Jackets', 'Dresses', 'Skirts'
   ], []);
 
   const [categoryIdMap, setCategoryIdMap] = useState<Record<string, string | null>>({});
@@ -72,22 +72,32 @@ export default function ClosetScreen() {
 
   // Load category IDs
   useEffect(() => {
-    const fetchCategoryIds = async () => {
-      try {
-        const api = (await import('@/api/axios')).default;
-        const resp = await api.get('/categories');
-        const data = Array.isArray(resp?.data) ? resp.data : [];
-        const map: Record<string, string | null> = {};
-        PREDEFINED_CATEGORY_NAMES.forEach((name) => {
-          const found = data.find((c: any) => (c.name || '').toLowerCase() === name.toLowerCase());
-          map[name] = found ? String(found.id) : null;
-        });
-        setCategoryIdMap(map);
-      } catch (err) {
-        console.error('Failed to fetch categories for ids', err);
-      }
+    // const fetchCategoryIds = async () => {
+    //   try {
+    //     const api = (await import('@/api/axios')).default;
+    //     const resp = await api.get('/categories');
+    //     const data = Array.isArray(resp?.data) ? resp.data : [];
+    //     const map: Record<string, string | null> = {};
+    //     PREDEFINED_CATEGORY_NAMES.forEach((name) => {
+    //       const found = data.find((c: any) => (c.name || '').toLowerCase() === name.toLowerCase());
+    //       map[name] = found ? String(found.id) : null;
+    //     });
+    //     setCategoryIdMap(map);
+    //   } catch (err) {
+    //     console.error('Failed to fetch categories for ids', err);
+    //   }
+    // };
+    // fetchCategoryIds();
+    
+    const hardCodedMap: Record<string, string | null> = {
+      Dresses: "13351",
+      Tops: "13332",
+      Jeans: "13377",
+      Pants: "13281",
+      Jackets: "13414",
+      Skirts: "13302",
     };
-    fetchCategoryIds();
+    setCategoryIdMap(hardCodedMap);
   }, [PREDEFINED_CATEGORY_NAMES]);
 
   // Load Likes
