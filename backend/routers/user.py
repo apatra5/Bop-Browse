@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from db.session import SessionLocal
 from crud import user as crud_user
-from schemas.user import UserCreate, UserOut, UserUpdate, UserBase
+from schemas.user import UserCreate, UserOut, UserUpdate, UserBase, UserNewFlagUpdate
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -64,3 +64,14 @@ def check_user_status(username: str, db: Session = Depends(get_db)):
         "username": user.username,
         "is_new_user": user.is_new_user
     }
+
+
+@router.patch("/{username}/new-user-flag", response_model=UserOut)
+def update_new_user_flag(username: str, flag_update: UserNewFlagUpdate, db: Session = Depends(get_db)):
+    """Update only the is_new_user flag for a user"""
+    user = crud_user.get_user_by_username(db, username)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    updated = crud_user.update_user(db, user, is_new_user=flag_update.is_new_user)
+    return updated

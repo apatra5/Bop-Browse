@@ -22,3 +22,7 @@ class UserUpdate(BaseModel):
     username: Optional[str] = None
     password: Optional[str] = None
     is_new_user: Optional[bool] = None
+
+
+class UserNewFlagUpdate(BaseModel):
+    is_new_user: bool
