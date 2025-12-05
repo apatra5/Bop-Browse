@@ -6,15 +6,18 @@ import {
   FlatList,
   Dimensions,
   ActivityIndicator,
-  StatusBar
+  StatusBar,
+  Alert
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { PreferenceCard } from '@/components/preference-card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from '@/contexts/AuthContext';
 
 const IMAGE_BASE_URL = 'https://m.media-amazon.com/images/G/01/Shopbop/p';
+const API_BASE_URL = 'http://0.0.0.0:8000'; // Define base URL for consistency
 const { width } = Dimensions.get('window');
 
 // --- Layout Constants ---
@@ -32,12 +35,17 @@ interface ProductItem {
 }
 
 export default function PreferencesScreen() {
+  const { userId } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   
   const [items, setItems] = useState<ProductItem[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  
+  // Loading state for fetching items
   const [loading, setLoading] = useState(true);
+  // Loading state for submitting preferences
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetchItems();
@@ -45,8 +53,7 @@ export default function PreferencesScreen() {
 
   const fetchItems = async () => {
     try {
-      // Using generic mock feed or your endpoint
-      const res = await fetch('http://0.0.0.0:8000/items/feed?offset=0&limit=20');
+      const res = await fetch(`${API_BASE_URL}/items/feed?offset=0&limit=20`);
       const data: ProductItem[] = await res.json();
       setItems(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -62,8 +69,52 @@ export default function PreferencesScreen() {
     setSelected(newSet);
   };
 
-  const handleContinue = () => {
-    router.replace('/(tabs)');
+  const handleContinue = async () => {
+    if (!userId) {
+      Alert.alert('Error', 'User ID not found. Please log in again.');
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      // 1. Create an array of Promises (one fetch call per selected item)
+      const selectedIds = Array.from(selected);
+      
+      const promises = selectedIds.map((itemId) => {
+        return fetch(`${API_BASE_URL}/preferences/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            user_id: userId, 
+            item_id: itemId,
+          }),
+        });
+      });
+
+      // 2. Execute all requests in parallel
+      const responses = await Promise.all(promises);
+
+      // 3. Optional: Check if any failed
+      const allSuccessful = responses.every(res => res.ok);
+      
+      if (!allSuccessful) {
+        console.warn('Some preferences failed to save');
+        // You can choose to block navigation here, or proceed anyway 
+        // depending on strictness. We will proceed for better UX.
+      }
+
+      // 4. Navigate to next screen
+      router.replace('/(tabs)');
+
+    } catch (error) {
+      console.error('Error saving preferences:', error);
+      Alert.alert('Error', 'There was a problem saving your preferences. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const renderItem = ({ item }: { item: ProductItem }) => {
@@ -77,9 +128,8 @@ export default function PreferencesScreen() {
           selected={isSelected}
           onToggle={() => toggleSelect(item.id)}
           width={ITEM_WIDTH}
-          height={Math.floor(ITEM_WIDTH * 1.5)} // Consistent 2:3 ratio
+          height={Math.floor(ITEM_WIDTH * 1.5)}
         />
-        {/* Simple Label below card */}
         <ThemedText 
           style={[styles.itemLabel, isSelected && styles.itemLabelSelected]} 
           numberOfLines={1}
@@ -89,6 +139,8 @@ export default function PreferencesScreen() {
       </View>
     );
   };
+
+  const isContinueDisabled = selected.size < 3 || submitting;
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -101,6 +153,7 @@ export default function PreferencesScreen() {
           onPress={() => router.back()} 
           style={styles.iconBtn} 
           hitSlop={20}
+          disabled={submitting} // Prevent back during submit
         >
           <IconSymbol name="chevron.left" size={24} color="#000" />
         </TouchableOpacity>
@@ -136,15 +189,19 @@ export default function PreferencesScreen() {
         <TouchableOpacity
           style={[
             styles.continueButton,
-            selected.size < 3 && styles.continueButtonDisabled
+            isContinueDisabled && styles.continueButtonDisabled
           ]}
           onPress={handleContinue}
           activeOpacity={0.9}
-          disabled={selected.size < 3}
+          disabled={isContinueDisabled}
         >
-          <ThemedText style={styles.continueText}>
-            {selected.size > 0 ? `CONTINUE (${selected.size})` : 'SELECT ITEMS'}
-          </ThemedText>
+          {submitting ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <ThemedText style={styles.continueText}>
+              {selected.size > 0 ? `CONTINUE (${selected.size})` : 'SELECT ITEMS'}
+            </ThemedText>
+          )}
         </TouchableOpacity>
       </View>
     </View>
@@ -156,8 +213,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-
-  // Header
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -187,11 +242,9 @@ const styles = StyleSheet.create({
     marginTop: 4,
     letterSpacing: 0.5,
   },
-
-  // Grid
   listContent: {
     paddingHorizontal: SCREEN_PADDING,
-    paddingBottom: 120, // Space for footer
+    paddingBottom: 120, 
   },
   itemLabel: {
     marginTop: 8,
@@ -204,14 +257,11 @@ const styles = StyleSheet.create({
     color: '#000',
     fontWeight: '600',
   },
-
   centerLoading: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-
-  // Footer
   footerContainer: {
     position: 'absolute',
     left: 0,
@@ -223,21 +273,18 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
   },
-
   continueButton: {
     width: '100%',
     height: 52,
-    borderRadius: 8, // Sleek, less round
-    backgroundColor: '#000', // Editorial Black
+    borderRadius: 8,
+    backgroundColor: '#000', 
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   continueButtonDisabled: {
     backgroundColor: '#e0e0e0',
   },
-
   continueText: {
     color: '#fff',
     fontSize: 14,
