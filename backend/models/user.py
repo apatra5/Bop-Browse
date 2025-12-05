@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean
 from sqlalchemy.orm import relationship
 from db.base import Base
-from models.associations import UserLikeItems, user_dislike_items
+from models.associations import UserLikeItems, user_dislike_items, UserPreferenceItems, user_like_outfits
 
 class User(Base):
     __tablename__ = "users"
@@ -13,4 +13,5 @@ class User(Base):
     liked_items = relationship("UserLikeItems", back_populates="user")
     disliked_items = relationship("Item", secondary=user_dislike_items, back_populates="disliked_by_users")
     preference_items = relationship("UserPreferenceItems", back_populates="user")
+    liked_outfits = relationship("Outfit", secondary=user_like_outfits, back_populates="liked_by_users")
 

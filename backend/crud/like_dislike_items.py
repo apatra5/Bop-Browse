@@ -1,5 +1,6 @@
 from sqlalchemy import func
 from sqlalchemy.orm import selectinload
+from models.outfit import Outfit
 from models.user import User
 from models.item import Item
 from models.associations import UserLikeItems, user_dislike_items, item_category, UserPreferenceItems
@@ -23,6 +24,26 @@ def like_item(db, user_id: int, item_id: str):
         db.commit()
     return query.first()
 
+def like_outfit(db, user_id: int, outfit_id: str):
+    """Add an outfit to the user's liked outfits."""
+    user = db.query(User).filter(User.id == user_id).first()
+    outfit = db.query(Outfit).filter(Outfit.id == outfit_id).first()
+    if outfit not in user.liked_outfits:
+        user.liked_outfits.append(outfit)
+        db.commit()
+    return user
+
+def get_user_liked_outfits(db, user_id: int) -> list[Outfit]:
+    """Retrieve all outfits liked by the user."""
+    user = (
+        db.query(User)
+        .options(selectinload(User.liked_outfits))
+        .filter(User.id == user_id)
+        .first()
+    )
+    if user:
+        return user.liked_outfits
+    return None
 
 def dislike_item(db, user_id: int, item_id: str):
     """Add an item to the user's disliked items."""

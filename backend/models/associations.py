@@ -40,3 +40,10 @@ user_dislike_items = Table(
     Column('user_id', Integer, ForeignKey('users.id'), primary_key=True),
     Column('item_id', String, ForeignKey('items.id'), primary_key=True)
 )
+
+user_like_outfits = Table(
+    'user_like_outfits',
+    Base.metadata,
+    Column('user_id', Integer, ForeignKey('users.id'), primary_key=True),
+    Column('outfit_id', String, ForeignKey('outfits.id'), primary_key=True)
+)

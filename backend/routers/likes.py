@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from db.session import SessionLocal
 from crud import like_dislike_items as crud_likes
-from schemas.like import LikeRequest, LikeResponse, UserLikesResponse
+from schemas.like import LikeRequest, LikeResponse, UserLikesOutfitsResponse, UserLikesResponse
 from schemas.item import ItemOut, ItemWithCategories
 from scripts.sync_items import SyncItems
 
@@ -76,6 +76,55 @@ def get_user_likes(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error fetching liked items: {str(e)}"
+        )
+
+@router.post("/outfits/", response_model=LikeResponse, status_code=status.HTTP_201_CREATED)
+def like_outfit(
+    like_data: LikeRequest,
+    db: Session = Depends(get_db)
+):
+    """Like an outfit - adds it to the user's liked outfits"""
+    try:
+        result = crud_likes.like_outfit(db, user_id=like_data.user_id, outfit_id=like_data.item_id)
+        
+        if result is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User or outfit not found"
+            )
+        
+        return LikeResponse(
+            message="Outfit liked successfully",
+            user_id=like_data.user_id,
+            item_id=like_data.item_id
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error liking outfit: {str(e)}"
+        )
+
+@router.get("/outfits/{user_id}", response_model=UserLikesOutfitsResponse)
+def get_user_likes_outfits(
+    user_id: int,
+    db: Session = Depends(get_db)
+):
+    """Get all outfits liked by a user"""
+    try:
+        liked_outfits = crud_likes.get_user_liked_outfits(db, user_id=user_id)
+        print(liked_outfits[0].items)
+        if liked_outfits is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        return UserLikesOutfitsResponse(user_id=user_id, liked_outfits=liked_outfits)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error fetching liked outfits: {str(e)}"
         )
 
 ##Make sure to test endpoint

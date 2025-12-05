@@ -9,3 +9,4 @@ class Outfit(Base):
     image_url_suffix = Column(String, nullable=True)
 
     items = relationship("Item", secondary=item_outfit, back_populates="outfits")
+    liked_by_users = relationship("User", secondary="user_like_outfits", back_populates="liked_outfits")
