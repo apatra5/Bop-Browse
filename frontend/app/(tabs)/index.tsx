@@ -4,25 +4,25 @@ import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Item } from "@/data/mock-items";
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from 'expo-router';
+import { useRouter } from "expo-router";
 import {
   StyleSheet,
   TouchableOpacity,
   View,
   ActivityIndicator,
   StatusBar,
-  Dimensions
+  Dimensions,
 } from "react-native";
 import api from "@/api/axios";
 import { useAuth } from "@/contexts/AuthContext";
 import { FilterDropdown } from "@/components/filter-dropdown";
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 export default function SwipeScreen() {
   const { userId } = useAuth();
   const router = useRouter();
-  
+
   // State
   const [items, setItems] = useState<Item[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -31,9 +31,17 @@ export default function SwipeScreen() {
 
   // --- Filter Logic ---
   const categories = [
-    "Dresses", "Tops", "Matching Sets", "Swimsuits & Cover-Ups",
-    "Sweaters & Knits", "Jeans", "Pants", "Jackets & Coats",
-    "Skirts", "Activewear", "Wide Leg & Flare",
+    "Dresses",
+    "Tops",
+    "Matching Sets",
+    "Swimsuits & Cover-Ups",
+    "Sweaters & Knits",
+    "Jeans",
+    "Pants",
+    "Jackets & Coats",
+    "Skirts",
+    "Activewear",
+    "Wide Leg & Flare",
   ];
 
   const CATEGORY_MAP: Record<string, string[]> = {
@@ -56,9 +64,14 @@ export default function SwipeScreen() {
 
   // --- Data Fetching ---
   const fetchItems = useCallback(async () => {
+    // Add this check immediately at the top
+    if (!userId) return;
+
     try {
       setLoading(true);
-      const categoryIds = selectedCategories.flatMap((cat) => CATEGORY_MAP[cat] || []);
+      const categoryIds = selectedCategories.flatMap(
+        (cat) => CATEGORY_MAP[cat] || []
+      );
 
       const response = await api.post("/items/personalized-feed", {
         user_id: userId,
@@ -86,7 +99,7 @@ export default function SwipeScreen() {
       const response = await api.get("/items/feed");
       const newItems = mapResponseToItems(response.data);
       setItems((prev) => [...prev, ...newItems]);
-    } catch(e) {
+    } catch (e) {
       console.error(e);
     } finally {
       setIsFetchingMore(false);
@@ -98,8 +111,8 @@ export default function SwipeScreen() {
     return data.map((item: any) => {
       const suffix = item.image_url_suffix;
       const fullImageUrl = suffix
-          ? `https://m.media-amazon.com/images/G/01/Shopbop/p${suffix}`
-          : item.image_url || "";
+        ? `https://m.media-amazon.com/images/G/01/Shopbop/p${suffix}`
+        : item.image_url || "";
 
       return {
         id: String(item.id),
@@ -112,16 +125,23 @@ export default function SwipeScreen() {
         price: item.price,
         color: item.color,
         stretch: item.stretch ?? null,
-        product_images: Array.isArray(item.product_images) ? item.product_images : [],
+        product_images: Array.isArray(item.product_images)
+          ? item.product_images
+          : [],
         categories: Array.isArray(item.categories) ? item.categories : [],
-        brand_code: "", 
+        brand_code: "",
       };
     });
   };
 
   useEffect(() => {
     const threshold = items.length - 4;
-    if (items.length > 0 && currentIndex >= threshold && !loading && !isFetchingMore) {
+    if (
+      items.length > 0 &&
+      currentIndex >= threshold &&
+      !loading &&
+      !isFetchingMore
+    ) {
       fetchMoreItems();
     }
   }, [currentIndex, items.length]);
@@ -130,7 +150,9 @@ export default function SwipeScreen() {
   const handleSwipeLeft = async () => {
     const current = items[currentIndex];
     if (current && userId) {
-      api.post("/dislikes/", { user_id: Number(userId), item_id: current.id }).catch(console.error);
+      api
+        .post("/dislikes/", { user_id: Number(userId), item_id: current.id })
+        .catch(console.error);
     }
     setCurrentIndex((prev) => prev + 1);
   };
@@ -138,7 +160,9 @@ export default function SwipeScreen() {
   const handleSwipeRight = async () => {
     const current = items[currentIndex];
     if (current && userId) {
-      api.post("/likes/", { user_id: Number(userId), item_id: current.id }).catch(console.error);
+      api
+        .post("/likes/", { user_id: Number(userId), item_id: current.id })
+        .catch(console.error);
     }
     setCurrentIndex((prev) => prev + 1);
   };
@@ -159,7 +183,9 @@ export default function SwipeScreen() {
     return (
       <ThemedView style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#000" />
-        <ThemedText style={styles.loadingText}>Curating your style...</ThemedText>
+        <ThemedText style={styles.loadingText}>
+          Curating your style...
+        </ThemedText>
       </ThemedView>
     );
   }
@@ -186,7 +212,7 @@ export default function SwipeScreen() {
   return (
     <ThemedView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      
+
       {/* HEADER */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -208,8 +234,14 @@ export default function SwipeScreen() {
           }}
         >
           <View>
-            <IconSymbol name="line.3.horizontal.decrease" size={24} color="#1a1a1a" />
-            {selectedCategories.length > 0 && <View style={styles.filterBadge} />}
+            <IconSymbol
+              name="line.3.horizontal.decrease"
+              size={24}
+              color="#1a1a1a"
+            />
+            {selectedCategories.length > 0 && (
+              <View style={styles.filterBadge} />
+            )}
           </View>
         </TouchableOpacity>
       </View>
@@ -239,7 +271,7 @@ export default function SwipeScreen() {
             onSwipeRight={() => {}}
           />
         )}
-        
+
         <ItemCard
           key={`current-${currentItem.id}`}
           item={currentItem}
@@ -285,21 +317,21 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: '#f7f7f7',
+    backgroundColor: "#f7f7f7",
     borderRadius: 20,
   },
   filterBadge: {
-    position: 'absolute',
+    position: "absolute",
     top: -2,
     right: -2,
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#d49595',
+    backgroundColor: "#d49595",
   },
   cardStack: {
     flex: 1,
-    justifyContent: "center", 
+    justifyContent: "center",
     alignItems: "center",
     marginTop: 20,
     marginBottom: 40,
@@ -311,18 +343,18 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   emptyStateContent: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingHorizontal: 40,
   },
   emptyTitle: {
     marginTop: 24,
     fontSize: 22,
-    textAlign: 'center',
+    textAlign: "center",
   },
   emptySubtitle: {
     marginTop: 8,
-    textAlign: 'center',
-    color: '#666',
+    textAlign: "center",
+    color: "#666",
     lineHeight: 22,
   },
   resetButton: {
