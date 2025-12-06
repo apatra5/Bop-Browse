@@ -142,7 +142,6 @@ export default function SignUpScreen() {
             value={password} 
             onChangeText={setPassword} 
             secureTextEntry 
-            autoComplete="password"
             onBlur={() => setTouched(prev => ({ ...prev, password: true }))}
           />
           {touched.password && validation.password && <ThemedText style={styles.helperText}>{validation.password}</ThemedText>}
