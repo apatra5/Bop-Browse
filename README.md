@@ -4,6 +4,8 @@ Build a Tinder like system for matching users with Shopbop outfits that they lik
 
 
 ## Development
+### Architecture Diagram
+![alt text](architecture.png)
 ### Backend
 
 To run backend locally:
