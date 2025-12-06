@@ -43,7 +43,10 @@ export const OutfitLookCard: React.FC<OutfitLookCardProps> = ({
   const itemCount = validStyleColors.length;
 
   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
-  const [isAdding, setIsAdding] = useState(false);
+  
+  // Separate loading states for better UX
+  const [isSavingOutfit, setIsSavingOutfit] = useState(false); // For "Add Outfit"
+  const [isSavingItems, setIsSavingItems] = useState(false);   // For "Add Items"
 
   const toggleSelection = (index: number) => {
     const newSet = new Set(selectedIndices);
@@ -60,30 +63,24 @@ export const OutfitLookCard: React.FC<OutfitLookCardProps> = ({
   const primaryImageUrl = getImageUrl(primaryImage?.src);
   if (!primaryImageUrl && validStyleColors.length === 0) return null;
 
-  // --- API HANDLER ---
+  // --- API HANDLER: Save Individual Items ---
   const saveItemsToCloset = async (itemsToSave: any[]) => {
     if (!userId) {
-      Alert.alert("Sign In Required", "Please sign in to save items to your closet.");
+      Alert.alert("Sign In Required", "Please sign in to save items.");
       return;
     }
 
-    setIsAdding(true);
+    setIsSavingItems(true);
     try {
       const apiCalls = itemsToSave.map((item) => {
-        
-        // --- CORRECTED ID EXTRACTION: ONLY productSin ---
-        const rawId = item.product?.productSin || item.id; // Fallback to .id if flat object
-
-        if (!rawId) {
-          console.warn("Skipping item, no productSin found:", item);
-          return Promise.resolve(); 
-        }
+        const rawId = item.product?.productSin || item.id; 
+        if (!rawId) return Promise.resolve(); 
 
         const payload = {
           user_id: Number(userId),
           item_id: String(rawId) 
         };
-        
+        // This endpoint saves specific products/items
         return api.post('/likes/', payload);
       });
 
@@ -97,24 +94,58 @@ export const OutfitLookCard: React.FC<OutfitLookCardProps> = ({
       console.error("Failed to save items", error);
       Alert.alert("Error", "Could not save items. Please try again.");
     } finally {
-      setIsAdding(false);
+      setIsSavingItems(false);
+    }
+  };
+
+  // --- API HANDLER: Save Entire Outfit ---
+  const handleSaveOutfit = async () => {
+    if (!userId) {
+      Alert.alert("Sign In Required", "Please sign in to save this outfit.");
+      return;
+    }
+
+    // Attempt to find the Outfit ID. 
+    // Adjust 'id', 'outfitId', or 'entityId' based on your actual object structure
+    const outfitId = outfitData.id || outfitData.outfitId;
+
+    if (!outfitId) {
+      console.warn("No outfit ID found in data:", outfitData);
+      Alert.alert("Error", "Could not find outfit details.");
+      return;
+    }
+
+    setIsSavingOutfit(true);
+
+    try {
+      // Using the specific endpoint for Outfits
+      await api.post('/likes/outfits/', {
+        user_id: Number(userId),
+        item_id: String(outfitId) // Schema requires 'item_id' key even for outfits
+      });
+
+      Alert.alert("Success", "Outfit saved to your likes!");
+      onAddToClosetSuccess?.();
+
+    } catch (error) {
+      console.error("Failed to save outfit", error);
+      Alert.alert("Error", "Could not save outfit. Please try again.");
+    } finally {
+      setIsSavingOutfit(false);
     }
   };
 
   // --- Button Actions ---
 
-  const handleAddAll = () => {
-    if (isAdding) return;
-    saveItemsToCloset(validStyleColors);
-  };
-
   const handleRightAction = () => {
-    if (isAdding) return;
+    if (isSavingItems || isSavingOutfit) return;
 
     if (selectedIndices.size > 0) {
+      // Save specific items selected by user
       const selectedItems = validStyleColors.filter((_: any, idx: number) => selectedIndices.has(idx));
       saveItemsToCloset(selectedItems);
     } else {
+      // Navigate to shop
       if (onShopClick) {
         onShopClick(outfitData);
       }
@@ -220,24 +251,28 @@ export const OutfitLookCard: React.FC<OutfitLookCardProps> = ({
       </View>
 
       <View style={styles.footerRow}>
+        {/* ADD OUTFIT BUTTON */}
         <TouchableOpacity
           style={[styles.buttonBase, styles.buttonSecondary]}
-          onPress={handleAddAll}
+          onPress={handleSaveOutfit}
           activeOpacity={0.7}
-          disabled={isAdding}
+          disabled={isSavingOutfit || isSavingItems}
         >
-          <Text style={styles.textSecondary}>
-            {isAdding && selectedIndices.size === 0 ? "SAVING..." : "ADD OUTFIT"}
-          </Text>
+          {isSavingOutfit ? (
+             <ActivityIndicator size="small" color="#000" />
+          ) : (
+            <Text style={styles.textSecondary}>ADD OUTFIT</Text>
+          )}
         </TouchableOpacity>
 
+        {/* ADD ITEMS / SHOP BUTTON */}
         <TouchableOpacity
           style={[styles.buttonBase, styles.buttonPrimary]}
           onPress={handleRightAction}
           activeOpacity={0.85}
-          disabled={isAdding}
+          disabled={isSavingOutfit || isSavingItems}
         >
-          {isAdding && selectedIndices.size > 0 ? (
+          {isSavingItems ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
             <Text style={styles.textPrimary}>

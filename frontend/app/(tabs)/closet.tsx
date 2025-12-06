@@ -8,18 +8,19 @@ import {
   Image,
   StatusBar,
   ScrollView,
-  ActivityIndicator
+  ActivityIndicator,
+  Alert
 } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useAuth } from '@/contexts/AuthContext';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useRouter } from 'expo-router';
-import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useFocusEffect } from '@react-navigation/native';
 import { ProductDetailModal } from '@/components/product-detail-modal';
 import { LinearGradient } from 'expo-linear-gradient';
+import { ClosetOutfitCard } from '@/components/closet-outfit-card'; 
 
 // --- Dimensions & Constants ---
 const { width } = Dimensions.get('window');
@@ -27,10 +28,23 @@ const SCREEN_PADDING = 16;
 const NUM_COLUMNS = 2;
 const GAP = 12;
 
-// Calculate Item Size
 const AVAILABLE_WIDTH = width - (SCREEN_PADDING * 2) - GAP;
 const ITEM_WIDTH = Math.floor(AVAILABLE_WIDTH / NUM_COLUMNS);
 const ITEM_HEIGHT = Math.floor(ITEM_WIDTH * 1.5); 
+
+// Base URLs
+const IMAGE_PREFIX = 'https://m.media-amazon.com/images/G/01/Shopbop/p';
+const PRODUCT_PREFIX = 'https://shopbop.com/';
+
+// --- Types ---
+type ProductItem = {
+  id: string;
+  title: string;
+  brand: string;
+  imageUrl?: string;
+  productUrl?: string;
+  category?: string;
+};
 
 export default function ClosetScreen() {
   const { userId } = useAuth();
@@ -40,239 +54,223 @@ export default function ClosetScreen() {
 
   // --- State ---
   const [selectedCategory, setSelectedCategory] = useState('All Items');
-  const [items, setItems] = useState<ClosetItem[]>([]);
+  
+  // Data State
+  const [products, setProducts] = useState<ProductItem[]>([]);
+  const [outfits, setOutfits] = useState<any[]>([]); // Array of raw outfit objects
+  
+  // UI State
   const [loading, setLoading] = useState(false);
   const [removing, setRemoving] = useState<Record<string, boolean>>({});
   
+  // Modal State
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<ClosetItem | null>(null);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
 
-  // --- Category Logic ---
+  const [categoryIdMap, setCategoryIdMap] = useState<Record<string, string | null>>({});
+
+  // --- Categories ---
   const categories = useMemo(() => [
     'All Items', 'Outfit', 'Tops', 'Jeans', 'Pants', 'Jackets', 'Dresses', 'Skirts'
   ], []);
 
-  const PREDEFINED_CATEGORY_NAMES = useMemo(() => [
-    'Tops', 'Jeans', 'Pants', 'Jackets', 'Dresses', 'Skirts'
-  ], []);
-
-  const [categoryIdMap, setCategoryIdMap] = useState<Record<string, string | null>>({});
-
-  type ClosetItem = {
-    id: string;
-    title: string;
-    category?: string;
-    imageUrl?: string | undefined;
-    productUrl?: string | undefined;
-    brand?: string;
-  };
-
-  const IMAGE_PREFIX = 'https://m.media-amazon.com/images/G/01/Shopbop/p';
-  const PRODUCT_PREFIX = 'https://shopbop.com/';
-
-  // Load category IDs
   useEffect(() => {
-    // const fetchCategoryIds = async () => {
-    //   try {
-    //     const api = (await import('@/api/axios')).default;
-    //     const resp = await api.get('/categories');
-    //     const data = Array.isArray(resp?.data) ? resp.data : [];
-    //     const map: Record<string, string | null> = {};
-    //     PREDEFINED_CATEGORY_NAMES.forEach((name) => {
-    //       const found = data.find((c: any) => (c.name || '').toLowerCase() === name.toLowerCase());
-    //       map[name] = found ? String(found.id) : null;
-    //     });
-    //     setCategoryIdMap(map);
-    //   } catch (err) {
-    //     console.error('Failed to fetch categories for ids', err);
-    //   }
-    // };
-    // fetchCategoryIds();
-    
-    const hardCodedMap: Record<string, string | null> = {
+    setCategoryIdMap({
       Dresses: "13351",
       Tops: "13332",
       Jeans: "13377",
       Pants: "13281",
       Jackets: "13414",
       Skirts: "13302",
-    };
-    setCategoryIdMap(hardCodedMap);
-  }, [PREDEFINED_CATEGORY_NAMES]);
+    });
+  }, []);
 
-  // Load Likes
-  const fetchLikes = useCallback(async () => {
+  // --- Fetch Logic ---
+  const fetchData = useCallback(async () => {
     if (!userId) return;
     setLoading(true);
+    
     try {
       const api = (await import('@/api/axios')).default;
-      let resp: any;
 
-      if (selectedCategory === 'All Items' || selectedCategory === 'Outfit') {
-        resp = await api.get(`/likes/${encodeURIComponent(userId)}`);
-      } else {
-        const lookupId = categoryIdMap[selectedCategory];
-        const params = lookupId ? { category_id: lookupId } : {};
-        const url = lookupId 
-          ? `/likes/by-category/${encodeURIComponent(userId)}`
-          : `/likes/${encodeURIComponent(userId)}`;
-          
-        resp = await api.get(url, { params });
+      // 1. Fetch Outfits
+      if (selectedCategory === 'Outfit') {
+        const resp = await api.get(`/likes/outfits/${encodeURIComponent(userId)}`);
+        const rawList = resp?.data?.liked_outfits || []; 
+        setOutfits(rawList);
+      } 
+      
+      // 2. Fetch Products
+      else {
+        let resp: any;
+        if (selectedCategory === 'All Items') {
+          resp = await api.get(`/likes/${encodeURIComponent(userId)}`);
+        } else {
+          const catId = categoryIdMap[selectedCategory];
+          const url = catId 
+            ? `/likes/by-category/${encodeURIComponent(userId)}`
+            : `/likes/${encodeURIComponent(userId)}`;
+          const params = catId ? { category_id: catId } : {};
+          resp = await api.get(url, { params });
+        }
+
+        const rawList = Array.isArray(resp?.data) ? resp.data : [];
+        const mapped: ProductItem[] = rawList.map((p: any) => ({
+          id: String(p.id),
+          title: p.name,
+          brand: p.brand_name || p.designer_name || 'Designer',
+          imageUrl: p.image_url_suffix ? `${IMAGE_PREFIX}${p.image_url_suffix}` : undefined,
+          productUrl: p.product_detail_url ? `${PRODUCT_PREFIX}${p.product_detail_url}` : undefined,
+          category: p.category
+        }));
+        
+        setProducts(mapped);
       }
 
-      const data = Array.isArray(resp?.data) ? resp.data : [];
-      
-      const mapped: ClosetItem[] = data.map((it: any) => ({
-        id: String(it.id),
-        title: it.name,
-        imageUrl: it.image_url_suffix ? IMAGE_PREFIX + it.image_url_suffix : undefined,
-        productUrl: it.product_detail_url ? PRODUCT_PREFIX + it.product_detail_url : undefined,
-        brand: it.brand_name || it.designer_name || 'Designer',
-      }));
-      setItems(mapped);
-    } catch (err: any) {
-      console.error('Failed to fetch likes', err);
+    } catch (err) {
+      console.error('Fetch error:', err);
     } finally {
       setLoading(false);
     }
   }, [userId, selectedCategory, categoryIdMap]);
 
-  useEffect(() => {
-    fetchLikes();
-  }, [fetchLikes]);
-
   useFocusEffect(
-    React.useCallback(() => {
-      fetchLikes();
-    }, [fetchLikes])
+    useCallback(() => {
+      fetchData();
+    }, [fetchData])
   );
 
-  // Remove Logic
-  const handleRemove = useCallback(async (itemId: string) => {
+  // --- Remove Logic (UPDATED) ---
+  const handleRemove = async (id: string, isOutfit: boolean) => {
     if (!userId) return;
-    setRemoving((prev) => ({ ...prev, [itemId]: true }));
-    
-    const prevItems = items;
-    setItems((curr) => curr.filter((it) => it.id !== itemId));
+    setRemoving(prev => ({ ...prev, [id]: true }));
+
+    // 1. Optimistic Update (Remove from UI immediately)
+    if (isOutfit) {
+      setOutfits(prev => prev.filter(o => String(o.id) !== id));
+    } else {
+      setProducts(prev => prev.filter(p => p.id !== id));
+    }
 
     try {
       const api = (await import('@/api/axios')).default;
-      await api.delete('/likes/', {
-        data: {
-          user_id: Number(userId),
-          item_id: String(itemId),
-        },
-      });
+      
+      if (isOutfit) {
+        // --- NEW LOGIC FOR OUTFITS ---
+        // DELETE /likes/outfits/
+        // Payload: { user_id, item_id: <outfit_id> }
+        await api.delete('/likes/outfits/', {
+          data: { 
+            user_id: Number(userId), 
+            item_id: String(id) // Passing outfit ID to 'item_id' field as requested
+          }
+        });
+      } else {
+        // --- EXISTING LOGIC FOR PRODUCTS ---
+        await api.delete('/likes/', {
+          data: { 
+            user_id: Number(userId), 
+            item_id: String(id) 
+          }
+        });
+      }
+
     } catch (e) {
-      console.error('Failed to unlike item', e);
-      setItems(prevItems); 
+      console.error('Delete failed', e);
+      Alert.alert("Error", "Failed to delete item. It will reappear on refresh.");
+      // Rollback on failure (simple re-fetch)
+      fetchData(); 
     } finally {
-      setRemoving((prev) => {
-        const copy = { ...prev };
-        delete copy[itemId];
-        return copy;
+      setRemoving(prev => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
       });
     }
-  }, [userId, items]);
+  };
 
-  const handleItemPress = useCallback((item: ClosetItem) => {
-    setSelectedItem(item);
+  const handleProductPress = (id: string) => {
+    setSelectedProductId(id);
     setModalVisible(true);
-  }, []);
+  };
 
-  const handleCloseModal = useCallback(() => {
-    setModalVisible(false);
-    setTimeout(() => setSelectedItem(null), 300);
-  }, []);
-
-  const isServerFiltered =
-    selectedCategory !== 'All Items' &&
-    selectedCategory !== 'Outfit' &&
-    Boolean(categoryIdMap[selectedCategory]);
-
-  const visibleItems = isServerFiltered
-    ? items
-    : items.filter((it) => selectedCategory === 'All Items' || it.category === selectedCategory);
-
-
-  // --- Render Components ---
-  const renderItem = ({ item }: { item: ClosetItem }) => (
-    <TouchableOpacity 
-      style={styles.gridItem}
-      onPress={() => handleItemPress(item)}
-      activeOpacity={0.9}
-    >
-      <View style={styles.imageContainer}>
-        {item.imageUrl ? (
-          <Image 
-            source={{ uri: item.imageUrl }} 
-            style={styles.productImage} 
-            resizeMode="cover" 
+  // --- Render Individual Product (Grid Item) ---
+  const renderProductItem = ({ item }: { item: ProductItem }) => {
+    return (
+      <TouchableOpacity 
+        style={styles.gridItem}
+        activeOpacity={0.9}
+        onPress={() => handleProductPress(item.id)}
+      >
+        <View style={styles.imageContainer}>
+          {item.imageUrl ? (
+            <Image 
+              source={{ uri: item.imageUrl }} 
+              style={styles.productImage} 
+              resizeMode="cover" 
+            />
+          ) : (
+            <View style={styles.placeholder}>
+               <IconSymbol name="photo" size={24} color="#ccc" />
+            </View>
+          )}
+          
+          <LinearGradient
+            colors={['transparent', 'rgba(0,0,0,0.03)']}
+            style={StyleSheet.absoluteFill}
           />
-        ) : (
-          <View style={styles.placeholder}>
-             <IconSymbol name="photo" size={24} color="#ccc" />
-          </View>
-        )}
-        
-        <LinearGradient
-          colors={['transparent', 'rgba(0,0,0,0.03)']}
-          style={StyleSheet.absoluteFill}
-        />
 
-        <TouchableOpacity
-          style={styles.removeButton}
-          onPress={(e) => {
-            e.stopPropagation();
-            handleRemove(item.id);
-          }}
-          disabled={!!removing[item.id]}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <View style={styles.removeIconCircle}>
-            {removing[item.id] ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <IconSymbol name="xmark" size={12} color="#fff" />
-            )}
-          </View>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity
+            style={styles.removeButton}
+            onPress={(e) => {
+              e.stopPropagation();
+              handleRemove(item.id, false);
+            }}
+            disabled={!!removing[item.id]}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <View style={styles.removeIconCircle}>
+              {removing[item.id] ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <IconSymbol name="xmark" size={12} color="#fff" />
+              )}
+            </View>
+          </TouchableOpacity>
+        </View>
 
-      <View style={styles.metaContainer}>
-        {item.brand && (
-           <ThemedText style={styles.brandText} numberOfLines={1}>
-            {item.brand.toUpperCase()}
+        <View style={styles.metaContainer}>
+          <ThemedText style={styles.brandText} numberOfLines={1}>
+            {item.brand?.toUpperCase()}
           </ThemedText>
-        )}
-        <ThemedText style={styles.titleText} numberOfLines={1}>
-          {item.title}
-        </ThemedText>
-      </View>
-    </TouchableOpacity>
-  );
+          <ThemedText style={styles.titleText} numberOfLines={1}>
+            {item.title}
+          </ThemedText>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  // --- Determine Mode ---
+  const isOutfitMode = selectedCategory === 'Outfit';
+  const currentData = isOutfitMode ? outfits : products;
 
   return (
     <ThemedView style={styles.container}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       
-      {/* HEADER: Matches SwipeScreen Exactly */}
+      {/* Header */}
       <View style={styles.header}>
-        {/* 40px Spacer (Matches SwipeScreen Left Button) */}
         <View style={styles.headerSpacer} />
-        
         <ThemedText type="title" style={styles.headerTitle}>
           Your Closet
         </ThemedText>
-
-        {/* 40px Spacer (Matches SwipeScreen Right Button) */}
         <View style={styles.headerSpacer} />
       </View>
 
-      {/* Sub-header: Item Count (Moved out to preserve Title alignment) */}
       <View style={styles.subHeader}>
         <ThemedText style={styles.itemCount}>
-          {loading ? 'Updating...' : `${visibleItems.length} ITEMS SAVED`}
+          {loading ? 'Updating...' : `${currentData.length} SAVED`}
         </ThemedText>
       </View>
 
@@ -301,35 +299,61 @@ export default function ClosetScreen() {
         </ScrollView>
       </View>
 
-      {/* Grid */}
-      {loading && items.length === 0 ? (
+      {/* DYNAMIC FLATLIST */}
+      {loading && currentData.length === 0 ? (
         <View style={styles.centerEmpty}>
           <ActivityIndicator size="large" color="#000" />
         </View>
       ) : (
         <FlatList
-          data={visibleItems}
-          keyExtractor={(i) => i.id}
-          numColumns={NUM_COLUMNS}
+          key={isOutfitMode ? 'outfits-stack' : 'products-grid'} 
+          data={currentData}
+          keyExtractor={(i) => String(i.id)}
+          
+          // Switch between Stack (1) and Grid (2)
+          numColumns={isOutfitMode ? 1 : NUM_COLUMNS}
+          
           contentContainerStyle={styles.gridContent}
-          columnWrapperStyle={{ justifyContent: 'space-between' }}
-          renderItem={renderItem}
+          
+          // Only use columnWrapper for grid mode
+          columnWrapperStyle={!isOutfitMode ? { justifyContent: 'space-between' } : undefined}
+          
+          renderItem={({ item }) => {
+            if (isOutfitMode) {
+                return (
+                    <ClosetOutfitCard 
+                        outfit={item} 
+                        onRemove={(id) => handleRemove(id, true)}
+                        isRemoving={!!removing[item.id]}
+                    />
+                );
+            }
+            return renderProductItem({ item: item as ProductItem });
+          }}
+          
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View style={styles.centerEmpty}>
               <IconSymbol name="heart.slash" size={48} color="#ccc" />
-              <ThemedText style={styles.emptyText}>No items found in {selectedCategory}</ThemedText>
-              <ThemedText style={styles.emptySubText}>Go swipe to add some style!</ThemedText>
+              <ThemedText style={styles.emptyText}>No items found</ThemedText>
+              <ThemedText style={styles.emptySubText}>
+                {isOutfitMode 
+                  ? "Save complete looks to see them here" 
+                  : "Go swipe to add items!"}
+              </ThemedText>
             </View>
           }
         />
       )}
 
-      {selectedItem && (
+      {selectedProductId && (
         <ProductDetailModal
-          itemId={selectedItem.id}
+          itemId={selectedProductId}
           visible={modalVisible}
-          onClose={handleCloseModal}
+          onClose={() => {
+            setModalVisible(false);
+            setTimeout(() => setSelectedProductId(null), 300);
+          }}
         />
       )}
     </ThemedView>
@@ -340,34 +364,27 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingTop: 60, // Matches SwipeScreen container paddingTop
+    paddingTop: 60, 
   },
-  
-  // Header - Structural Match to SwipeScreen
   header: {
-    flexDirection: 'row', // Row layout
+    flexDirection: 'row', 
     alignItems: 'center',
-    justifyContent: 'space-between', // Space between 3 elements
+    justifyContent: 'space-between', 
     paddingHorizontal: 24,
     height: 50, 
     zIndex: 10,
   },
-  headerSpacer: {
-    width: 40, // Width of icon buttons in SwipeScreen
-  },
+  headerSpacer: { width: 40 },
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
     letterSpacing: 0.5,
     color: '#000',
-    // No margin bottom here to prevent shifting
   },
-  
-  // Sub-Header for Count
   subHeader: {
     alignItems: 'center',
     marginBottom: 12,
-    marginTop: -4, // Pulls it up slightly to sit snug under title
+    marginTop: -4, 
   },
   itemCount: {
     fontSize: 11,
@@ -375,8 +392,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     fontWeight: '600',
   },
-
-  // Categories
   categoryContainer: {
     height: 50,
     marginBottom: 6,
@@ -407,8 +422,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
   },
-
-  // Grid
   gridContent: {
     paddingHorizontal: SCREEN_PADDING,
     paddingBottom: 40,
@@ -418,8 +431,6 @@ const styles = StyleSheet.create({
     width: ITEM_WIDTH,
     marginBottom: 24, 
   },
-  
-  // Product Tile
   imageContainer: {
     width: ITEM_WIDTH,
     height: ITEM_HEIGHT,
@@ -454,25 +465,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-
-  // Meta Info
   metaContainer: {
     paddingHorizontal: 4,
   },
   brandText: {
     fontSize: 10,
-    color: '#999',
     letterSpacing: 1,
-    fontWeight: '700',
     marginBottom: 2,
+    color: '#999',
+    fontWeight: '700',
   },
   titleText: {
     fontSize: 13,
     color: '#1a1a1a',
     fontWeight: '500',
   },
-
-  // Empty State
   centerEmpty: {
     flex: 1,
     justifyContent: 'center',
