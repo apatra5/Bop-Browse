@@ -45,6 +45,15 @@ def get_user_liked_outfits(db, user_id: int) -> list[Outfit]:
         return user.liked_outfits
     return None
 
+def remove_liked_outfit(db, user_id: int, outfit_id: str):
+    """Remove an outfit from the user's liked outfits."""
+    user = db.query(User).filter(User.id == user_id).first()
+    outfit = db.query(Outfit).filter(Outfit.id == outfit_id).first()
+    if outfit in user.liked_outfits:
+        user.liked_outfits.remove(outfit)
+        db.commit()
+    return user
+
 def dislike_item(db, user_id: int, item_id: str):
     """Add an item to the user's disliked items."""
     user = db.query(User).filter(User.id == user_id).first()

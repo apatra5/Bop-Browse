@@ -85,6 +85,7 @@ def like_outfit(
 ):
     """Like an outfit - adds it to the user's liked outfits"""
     try:
+        SyncItems().addRelatedItemByOutfitId(like_data.item_id)
         result = crud_likes.like_outfit(db, user_id=like_data.user_id, outfit_id=like_data.item_id)
         
         if result is None:
@@ -112,7 +113,6 @@ def get_user_likes_outfits(
     """Get all outfits liked by a user"""
     try:
         liked_outfits = crud_likes.get_user_liked_outfits(db, user_id=user_id)
-        print(liked_outfits[0].items)
         if liked_outfits is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -154,6 +154,31 @@ def unlike_item(
             detail=f"Error unliking item: {str(e)}"
         )
 
+@router.delete("/outfits/", response_model=LikeResponse)
+def unlike_outfit(
+    like_data: LikeRequest,
+    db: Session = Depends(get_db)
+):
+    """Unlike an outfit - removes it from the user's liked outfits"""
+    try:
+        outfit = crud_likes.remove_liked_outfit(db, user_id=like_data.user_id, outfit_id=like_data.item_id)
+        
+        if outfit is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User or outfit not found"
+            )
+        
+        return LikeResponse(
+            message="Outfit unliked successfully",
+            user_id=like_data.user_id,
+            item_id=like_data.item_id
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error unliking outfit: {str(e)}"
+        )
 
 @router.get("/by-category/{user_id}", response_model=List[ItemOut])
 def get_user_likes_by_category(

@@ -303,7 +303,46 @@ class SyncItems:
         self._add_or_update_item(product_info, category_path=[])
         logging.info(f"Added/Updated item with product_sin: {product_sin}")
         return True
+    
+    def addRelatedItemByOutfitId(self, outfit_id: str):
+        outfit = crud_outfit.get_outfit_by_id(self.db, outfit_id)
+        if not outfit:
+            logging.error(f"Outfit with id {outfit_id} not found in database.")
+            return False
+        
+        # try to get this outfit from shopbop api
+        # get one item that we have in our database
+        itemInOutfit = outfit.items[0]
+        print(f"Item in outfit: {itemInOutfit}")
+        # fetch outfit from shopbop api
+        outfitsRelatedToItem = self.api_client.get_outfit(productSin=itemInOutfit.id)
+        # Find the outfit with the given outfit_id
+        target_outfit = None
+        for sc_outfit in outfitsRelatedToItem.get("styleColorOutfits", []):
+            for outfit_data in sc_outfit.get("outfits", []):
+                if outfit_data.get("id") == outfit_id:
+                    target_outfit = outfit_data
+                    break
+            if target_outfit:
+                break
+        print(f"Target outfit from API: {target_outfit.get('id')}")
+        if not target_outfit:
+            logging.error(f"Outfit with id {outfit_id} not found in Shopbop API for item {itemInOutfit.id}.")
+            return False
+        
+        # Save all items in this outfit to the database
+        for sc in target_outfit.get("styleColors", []):
+            item = sc.get("product")
+            productInfo = ProductInfo.from_product_dict(item)
+            self._add_or_update_item(productInfo, category_path=[])
+            logging.info(f"Added/Updated related item with product_sin: {productInfo.product_sin} for outfit {outfit_id}")
+        return True
+        
+              
+
+
 
 if __name__ == "__main__":
     syncer = SyncItems()
-    syncer.update_existing_items(offset=0, batch_size=100, skip_designer_name_filled=True)
+    # syncer.update_existing_items(offset=0, batch_size=100, skip_designer_name_filled=True)
+    syncer.addRelatedItemByOutfitId("33943")
