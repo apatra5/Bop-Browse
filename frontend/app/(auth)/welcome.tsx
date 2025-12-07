@@ -17,9 +17,8 @@ import { Stack, useRouter } from 'expo-router';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/contexts/AuthContext'; // Import Auth Context
+import api from '@/api/axios';
 
-// Use your API Base URL
-const API_BASE_URL = 'http://0.0.0.0:8000'; 
 
 export default function Welcome() {
   const router = useRouter();
@@ -122,14 +121,13 @@ export default function Welcome() {
     setCheckingUser(true); // Start loading spinner
 
     try {
-      const response = await fetch(`${API_BASE_URL}/users/${username}/status`);
+      const response = await api.get(`/users/${username}/status`);
       
-      if (!response.ok) {
+      if (response.status < 200 || response.status >= 300) {
         throw new Error('Failed to fetch user status');
       }
 
-      const data = await response.json();
-
+      const data = response.data;
       // Check the is_new_user flag
       if (data.is_new_user === true) {
         // Go to preferences (First time)

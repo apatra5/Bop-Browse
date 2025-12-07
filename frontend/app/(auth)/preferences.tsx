@@ -15,9 +15,9 @@ import { PreferenceCard } from '@/components/preference-card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
+import api from '@/api/axios';
 
 const IMAGE_BASE_URL = 'https://m.media-amazon.com/images/G/01/Shopbop/p';
-const API_BASE_URL = 'http://0.0.0.0:8000'; 
 const { width } = Dimensions.get('window');
 
 // --- Layout Constants ---
@@ -51,8 +51,8 @@ export default function PreferencesScreen() {
 
   const fetchItems = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/items/feed?offset=0&limit=20`);
-      const data: ProductItem[] = await res.json();
+      const res = await api.get('/items/feed', { params: { offset: 0, limit: 20 } });
+      const data: ProductItem[] = res.data;
       setItems(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error fetching items:', err);
@@ -80,31 +80,26 @@ export default function PreferencesScreen() {
       const selectedIds = Array.from(selected);
       
       const prefPromises = selectedIds.map((itemId) => {
-        return fetch(`${API_BASE_URL}/preferences/`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            user_id: userId, 
+        
+        return api.post('/preferences/', {
+          user_id: userId, 
             item_id: itemId,
-          }),
-        });
+          });
       });
 
       const responses = await Promise.all(prefPromises);
-      const allSuccessful = responses.every(res => res.ok);
+      const allSuccessful = responses.every(res => res.status >= 200 && res.status < 300);
       
       if (!allSuccessful) {
         console.warn('Some preferences failed to save');
       }
 
       // --- STEP 2: Update User "is_new_user" Flag to False ---
-      const userUpdateResponse = await fetch(`${API_BASE_URL}/users/${username}/new-user-flag`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ is_new_user: false }),
+      const userUpdateResponse = await api.patch(`/users/${username}/new-user-flag`, {
+        is_new_user: false,
       });
 
-      if (!userUpdateResponse.ok) {
+      if (userUpdateResponse.status < 200 || userUpdateResponse.status >= 300) {
         console.error('Failed to update new user flag on backend');
       } else {
         // Update local app state so we don't need to refetch user data
