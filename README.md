@@ -19,12 +19,12 @@ Figma Design Files: [Link](https://www.figma.com/design/WDSlLE3gzCH6GXKPo6GBTR/B
 Final Presentation Slides: [Link](https://www.canva.com/design/DAG6y18PvWc/xR7-dihYK3SxQ2JYhGlUJg/view?utm_content=DAG6y18PvWc&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=hda14f30241)
 
 ## Demo Video
-<p align="center">
-  <!-- GitHub's renderer and some browsers may not play .mov files inline. Provide a clickable thumbnail and a direct link as a fallback. -->
-  <a href="./Demo.mov" target="_blank" rel="noopener">
-    <img src="./logo.png" alt="Demo video (click to open Demo.mov)" style="max-width:200px;">
-  </a>
-</p>
+
+## Demo Video
+<video controls>
+  <source src="./Demo.mov" type="video/quicktime">
+  Your browser does not support the video tag.
+</video>
 
 Download / open the demo: [Demo.mov](./Demo.mov)
 
