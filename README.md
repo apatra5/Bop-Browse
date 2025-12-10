@@ -20,13 +20,11 @@ Final Presentation Slides: [Link](https://www.canva.com/design/DAG6y18PvWc/xR7-d
 
 ## Demo Video
 
-## Demo Video
-<video controls>
-  <source src="./Demo.mov" type="video/quicktime">
-  Your browser does not support the video tag.
-</video>
+https://github.com/user-attachments/assets/81b3a27d-6fa3-4084-81da-211773b21476
+
 
 Download / open the demo: [Demo.mov](./Demo.mov)
+
 
 
 ### Features
