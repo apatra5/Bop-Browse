@@ -63,7 +63,7 @@ pip install -r requirements.txt
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 cd ../frontend
 npm install
-expo start
+npx expo start
 ```
 
 ### Backend
@@ -136,3 +136,74 @@ To update item embeddings in the vector database, run the following script:
 ```bash
 python -m scripts.update_item_embeddings
 ```
+
+
+### Frontend
+
+To run frontend locally:
+```bash
+cd frontend
+npm i
+npx expo start -> then start simulator or scan qr code with Expo Go App
+```
+
+### Frontend Structure
+frontend/
+├─ app/                     # App entry + route-based screens (Expo Router)
+│  ├─ _layout.tsx           # Root layout for navigation, theming, and providers
+│  ├─ index.tsx             # Root auth gate & redirect screen, decides where to send the user based on local auth state
+│  ├─ modal.tsx             # Global modal route (e.g., overlays, dialogs)
+│  ├─ (auth)/               # Auth-related routes (login, signup, etc.)
+│  └─ (tabs)/               # Tab-based navigation stack (closet, outfits, profile, etc.)
+│
+├─ api/                     # API client setup and backend communication
+│  └─ axios.js              # Preconfigured Axios instance (base URL, interceptors)
+│
+├─ components/              # Reusable UI + domain components
+│  ├─ closet-outfit-card.tsx     # Card showing a saved outfit from the closet
+│  ├─ external-link.tsx          # Styled external link component (web & native)
+│  ├─ filter-dropdown.tsx        # Dropdown component for filtering items (categories, brands, etc.)
+│  ├─ haptic-tab.tsx             # Tab button with haptic feedback support
+│  ├─ hello-wave.tsx             # Example / decorative animated “hello” component
+│  ├─ item-card.tsx              # Card for displaying a single item (image, price, actions)
+│  ├─ outfit-look-card.tsx       # Card showing a full outfit look
+│  ├─ parallax-scroll-view.tsx   # Scroll view with parallax header effect
+│  ├─ preference-card.tsx        # Card for capturing / displaying user preferences
+│  ├─ product-detail-modal.tsx   # Modal for detailed product view (images, info, actions)
+│  ├─ themed-text.tsx            # Text component wired into the app’s theme
+│  ├─ themed-view.tsx            # View container aware of light/dark theme
+│  └─ ui/                        # Lower-level UI primitives (buttons, inputs, etc.)
+│
+├─ constants/
+│  └─ theme.ts              # Centralized theme (colors, spacing, typography) for the app
+│
+├─ contexts/
+│  └─ AuthContext.tsx       # React context for authentication state and actions
+│
+├─ data/
+│  └─ mock-items.ts         # Mock item data for development/testing UI without backend
+│
+├─ hooks/
+│  ├─ use-color-scheme.ts       # Hook: gets current color scheme on native
+│  ├─ use-color-scheme.web.ts   # Web-specific variant of color scheme hook
+│  └─ use-theme-color.ts        # Hook: computes themed colors for components
+│
+├─ assets/
+│  └─ images/               # Static images (icons, logos, illustrations, etc.)
+│
+├─ scripts/
+│  └─ reset-project.js      # Helper script to reset/clean the Expo project
+│
+├─ app.json                 # Expo app configuration (name, icons, splash, etc.)
+├─ babel.config.js          # Babel configuration for Expo/React Native
+├─ eslint.config.js         # ESLint configuration for linting the TS/JS code
+├─ expo-env.d.ts            # TypeScript declarations for Expo environment variables/types
+├─ package.json             # Frontend dependencies, scripts, and project metadata
+├─ tsconfig.json            # TypeScript compiler configuration
+└─ README.md                # Frontend-specific setup and usage instructions
+
+
+#### Configurations
+
+The frontend expects a .env file placed in the frontend/ folder so the application can import configuration settings at startup. The following variables are required: 
+  - EXPO_PUBLIC_API_URL
