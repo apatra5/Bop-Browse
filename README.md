@@ -148,6 +148,7 @@ npx expo start -> then start simulator or scan qr code with Expo Go App
 ```
 
 ### Frontend Structure
+```bash
 frontend/
 ├─ app/                     # App entry + route-based screens (Expo Router)
 │  ├─ _layout.tsx           # Root layout for navigation, theming, and providers
@@ -201,7 +202,7 @@ frontend/
 ├─ package.json             # Frontend dependencies, scripts, and project metadata
 ├─ tsconfig.json            # TypeScript compiler configuration
 └─ README.md                # Frontend-specific setup and usage instructions
-
+```
 
 #### Configurations
 
