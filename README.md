@@ -158,7 +158,7 @@ frontend/
 │  └─ (tabs)/               # Tab-based navigation stack (closet, outfits, profile, etc.)
 │
 ├─ api/                     # API client setup and backend communication
-│  └─ axios.js              # Preconfigured Axios instance (base URL, interceptors)
+│  └─ axios.js              # Preconfigured Axios instance
 │
 ├─ components/              # Reusable UI + domain components
 │  ├─ closet-outfit-card.tsx     # Card showing a saved outfit from the closet
