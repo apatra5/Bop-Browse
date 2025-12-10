@@ -345,4 +345,4 @@ class SyncItems:
 if __name__ == "__main__":
     syncer = SyncItems()
     # syncer.update_existing_items(offset=0, batch_size=100, skip_designer_name_filled=True)
-    syncer.addRelatedItemByOutfitId("33943")
+    syncer.sync()

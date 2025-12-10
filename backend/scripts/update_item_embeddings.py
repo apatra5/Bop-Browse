@@ -66,4 +66,4 @@ async def update_embeddings(start_offset=0, batch_size=50, skip_existing=False):
 
 
 if __name__ == "__main__":
-    asyncio.run(update_embeddings(0, 100, skip_existing=True))
+    asyncio.run(update_embeddings(0, 100, skip_existing=False))
